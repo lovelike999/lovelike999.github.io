@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="1150" viewBox="0 0 980 1150">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrowLoop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b45309"/>
+    </marker>
+  </defs>
+  <rect width="980" height="1150" fill="#ffffff"/>
+  <text x="490" y="34" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="21" font-weight="700" fill="#0f172a">
+    {mq} + Jev @ τ=0：单题推理流程
+  </text>
+  <!-- 1 input -->
+  <rect x="270" y="50" width="420" height="64" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="480" y="79" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="600" fill="#0f172a">问题 q + 对话上下文</text>
+  <text x="480" y="101" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#475569">已建好的记忆图（两臂共用同一张）</text>
+  <!-- 2 multiquery -->
+  <rect x="270" y="160" width="420" height="64" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="189" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="600" fill="#0f172a">查询扩展（multiquery）</text>
+  <text x="480" y="211" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#475569">一条问题 → 多条改写查询 q₁…qₖ</text>
+  <!-- 3 cosine recall -->
+  <rect x="270" y="270" width="420" height="64" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="299" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="600" fill="#0f172a">余弦召回 · 候选池 top-24</text>
+  <text x="480" y="321" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#475569">prefilter = 0：只排序，不设门槛</text>
+  <!-- 4 jev scoring -->
+  <rect x="270" y="380" width="420" height="64" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="480" y="409" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="600" fill="#0f172a">Jev 逐候选判定</text>
+  <text x="480" y="431" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#475569">s(c, q)：该候选是否足以回答（0–1）</text>
+  <!-- 5 admission -->
+  <rect x="270" y="490" width="420" height="64" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="480" y="519" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="600" fill="#0f172a">准入：s ≥ 0.05</text>
+  <text x="480" y="541" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#475569">低于阈值的候选在此丢弃</text>
+  <!-- 6 dedupe -->
+  <rect x="270" y="600" width="420" height="64" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <text x="480" y="629" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="600" fill="#0f172a">剔除已见片段 → 取前 2 段</text>
+  <text x="480" y="651" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#475569">filter_first：先过滤、后截断</text>
+  <!-- 7 answer -->
+  <rect x="270" y="710" width="420" height="64" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="480" y="739" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="600" fill="#0f172a">证据进入上下文 → 模型作答</text>
+  <text x="480" y="761" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#475569">每轮至多 24 次判定调用</text>
+  <!-- 8 loop decision -->
+  <polygon points="480,820 610,875 480,930 350,875" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="480" y="881" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="16" font-weight="600" fill="#0f172a">已作答 / 满 5 轮？</text>
+  <!-- 9 judging -->
+  <rect x="270" y="970" width="420" height="64" rx="10" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="480" y="999" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="600" fill="#0f172a">三判官重判同一批回答</text>
+  <text x="480" y="1021" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#475569">gpt-4o / deepseek-v4.1-flash / gpt-5-mini</text>
+  <!-- 10 metric -->
+  <rect x="270" y="1070" width="420" height="52" rx="10" fill="#0f172a"/>
+  <text x="480" y="1103" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="16" font-weight="600" fill="#ffffff">准确率 + 逐题配对 McNemar</text>
+  <!-- main arrows -->
+  <line x1="480" y1="114" x2="480" y2="158" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="480" y1="224" x2="480" y2="268" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="480" y1="334" x2="480" y2="378" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="480" y1="444" x2="480" y2="488" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="480" y1="554" x2="480" y2="598" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="480" y1="664" x2="480" y2="708" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="480" y1="774" x2="480" y2="818" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="480" y1="930" x2="480" y2="968" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="480" y1="1034" x2="480" y2="1068" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="492" y="952" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#475569">是</text>
+  <!-- loop back -->
+  <path d="M 350 875 L 150 875 L 150 192 L 268 192" fill="none" stroke="#b45309" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arrowLoop)"/>
+  <text x="140" y="560" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14" fill="#b45309" transform="rotate(-90 140 560)">否：下一轮（≤5）</text>
+  <!-- side notes -->
+  <rect x="716" y="380" width="240" height="174" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-dasharray="5 4"/>
+  <text x="734" y="406" font-family="Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#0f172a">对照臂</text>
+  <text x="734" y="432" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">· 只用余弦，按 τ 截断</text>
+  <text x="734" y="454" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">· 无逐候选判定</text>
+  <text x="734" y="476" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">· 其余环节完全相同</text>
+  <text x="734" y="506" font-family="Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#0f172a">顺序消融</text>
+  <text x="734" y="530" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">· topk_first = 先截断后去重</text>
+  <rect x="716" y="600" width="240" height="120" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-dasharray="5 4"/>
+  <text x="734" y="626" font-family="Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#0f172a">实测规模</text>
+  <text x="734" y="650" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">web：7,280 轮 / 17.2 万候选</text>
+  <text x="734" y="672" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">robot：4,327 轮 / 8.5 万候选</text>
+  <text x="734" y="698" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">平均池：23.7 / 19.6</text>
+  <text x="480" y="1140" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#94a3b8">
+    判定缓存命中后，计费调用为 web 77,526 次 / robot 33,780 次
+  </text>
+</svg>
