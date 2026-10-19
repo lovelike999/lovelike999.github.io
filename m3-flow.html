@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3-Agent 检索流程：{mq} + m3-control @ τ=0</title>
+<style>
+  body { margin: 0; padding: 24px; background: #f8fafc; display: flex; justify-content: center; }
+  .container { width: 100%; max-width: 1520px; background: #ffffff; border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06); overflow: hidden; }
+  svg { display: block; width: 100%; height: auto; }
+  @media (max-width: 900px) { body { padding: 8px; } }
+</style>
+</head>
+<body>
+<div class="container">
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="2060" viewBox="0 0 1520 2060">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrowLoop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b45309"/>
+    </marker>
+  </defs>
+
+  <rect width="1520" height="2060" fill="#ffffff"/>
+
+  <text x="40" y="42" font-family="Microsoft YaHei, sans-serif" font-size="21" font-weight="700" fill="#0f172a">
+    {mq} + m3-control @ τ=0：单题推理流程
+  </text>
+  <text x="40" y="68" font-family="Microsoft YaHei, sans-serif" font-size="13" fill="#64748b">
+    左侧为完整流程；右侧四块分别说明：交付顺序、单轮开销、余弦打分、多轮检索
+  </text>
+
+  <!-- ================= LEFT FLOW ================= -->
+  <rect x="40" y="100" width="380" height="52" rx="9" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.4"/>
+  <text x="230" y="123" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14.5" font-weight="600" fill="#0f172a">问题 q + 对话上下文</text>
+  <text x="230" y="142" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">两臂共用同一张记忆图</text>
+
+  <rect x="40" y="176" width="380" height="52" rx="9" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.4"/>
+  <text x="230" y="199" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14.5" font-weight="600" fill="#0f172a">查询扩展（multiquery）</text>
+  <text x="230" y="218" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">生成候选问法，选最不像历史的一条</text>
+
+  <rect x="40" y="252" width="380" height="52" rx="9" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.4"/>
+  <text x="230" y="275" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14.5" font-weight="600" fill="#0f172a">余弦召回 · 全部可见片段</text>
+  <text x="230" y="294" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">只排序，不设门槛（τ = 0）</text>
+
+  <rect x="40" y="328" width="380" height="52" rx="9" fill="#fef2f2" stroke="#ef4444" stroke-width="1.4"/>
+  <text x="230" y="351" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14.5" font-weight="600" fill="#0f172a">余弦打分（m3-control）</text>
+  <text x="230" y="370" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">节点余弦，片段取最大</text>
+
+  <rect x="40" y="404" width="380" height="52" rx="9" fill="#fef2f2" stroke="#ef4444" stroke-width="1.4"/>
+  <text x="230" y="427" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14.5" font-weight="600" fill="#0f172a">准入：τ = 0（不设限）</text>
+  <text x="230" y="446" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">名次决定交付，分数不设卡</text>
+
+  <rect x="40" y="480" width="380" height="52" rx="9" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+  <text x="230" y="503" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14.5" font-weight="600" fill="#065f46">剔除已见片段 → 取前 2 段</text>
+  <text x="230" y="522" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#047857">filter_first：先过滤，后截断；至多 2 段</text>
+
+  <rect x="40" y="556" width="380" height="52" rx="9" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.4"/>
+  <text x="230" y="579" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14.5" font-weight="600" fill="#0f172a">证据进入上下文 → 模型作答</text>
+  <text x="230" y="598" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">不足 2 段时按实际条数交付</text>
+
+  <polygon points="230,632 330,680 230,728 130,680" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="230" y="685" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="13.5" font-weight="600" fill="#0f172a">已作答 / 满 5 轮？</text>
+
+  <rect x="40" y="740" width="380" height="52" rx="9" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.4"/>
+  <text x="230" y="763" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14.5" font-weight="600" fill="#0f172a">三判官重判同一批回答</text>
+  <text x="230" y="782" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">gpt-4o / deepseek-v4.1-flash / gpt-5-mini</text>
+
+  <rect x="40" y="816" width="380" height="46" rx="9" fill="#0f172a"/>
+  <text x="230" y="845" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#ffffff">准确率 + 逐题配对 McNemar</text>
+
+  <line x1="230" y1="152" x2="230" y2="174" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="230" y1="228" x2="230" y2="250" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="230" y1="304" x2="230" y2="326" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="230" y1="380" x2="230" y2="402" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="230" y1="456" x2="230" y2="478" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="230" y1="532" x2="230" y2="554" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="230" y1="608" x2="230" y2="630" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="230" y1="728" x2="230" y2="738" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="230" y1="792" x2="230" y2="814" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="240" y="736" font-family="Microsoft YaHei, sans-serif" font-size="11" fill="#475569">是</text>
+
+  <path d="M 130 680 L 18 680 L 18 202 L 38 202" fill="none" stroke="#b45309" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arrowLoop)"/>
+  <text x="12" y="440" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b45309" transform="rotate(-90 12 440)">否：下一轮（≤5）</text>
+
+  <!-- ================= PANEL 1 : ORDER ================= -->
+  <rect x="470" y="100" width="1010" height="420" rx="12" fill="#fcfdfd" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="494" y="132" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="700" fill="#0f172a">① 交付顺序：同一批候选，两种结果</text>
+  <text x="494" y="156" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#64748b">情形：排名前 2 的片段在之前的轮次里已经交付过</text>
+
+  <rect x="494" y="170" width="962" height="28" fill="#eef2f6"/>
+  <text x="510" y="189" font-family="Microsoft YaHei, sans-serif" font-size="12" font-weight="600" fill="#334155">排名</text>
+  <text x="585" y="189" font-family="Microsoft YaHei, sans-serif" font-size="12" font-weight="600" fill="#334155">片段</text>
+  <text x="705" y="189" font-family="Microsoft YaHei, sans-serif" font-size="12" font-weight="600" fill="#334155">余弦分数</text>
+  <text x="825" y="189" font-family="Microsoft YaHei, sans-serif" font-size="12" font-weight="600" fill="#334155">是否已交付</text>
+  <text x="985" y="189" font-family="Microsoft YaHei, sans-serif" font-size="12" font-weight="600" fill="#334155">结局</text>
+
+  <text x="510" y="219" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#b91c1c">#1</text>
+  <text x="585" y="219" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">CLIP_37</text>
+  <text x="705" y="219" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">0.91</text>
+  <text x="825" y="219" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#b91c1c">已见 ✗</text>
+  <text x="985" y="219" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#64748b">filter_first 剔除</text>
+
+  <text x="510" y="247" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#b91c1c">#2</text>
+  <text x="585" y="247" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">CLIP_12</text>
+  <text x="705" y="247" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">0.88</text>
+  <text x="825" y="247" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#b91c1c">已见 ✗</text>
+  <text x="985" y="247" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#64748b">filter_first 剔除</text>
+
+  <text x="510" y="275" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">#3</text>
+  <text x="585" y="275" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">CLIP_05</text>
+  <text x="705" y="275" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">0.84</text>
+  <text x="825" y="275" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#047857">未见 ✓</text>
+  <text x="985" y="275" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#047857">交付</text>
+
+  <text x="510" y="303" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">#4</text>
+  <text x="585" y="303" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">CLIP_21</text>
+  <text x="705" y="303" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">0.79</text>
+  <text x="825" y="303" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#047857">未见 ✓</text>
+  <text x="985" y="303" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#047857">交付</text>
+
+  <text x="510" y="331" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">#5</text>
+  <text x="585" y="331" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">CLIP_08</text>
+  <text x="705" y="331" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#334155">0.71</text>
+  <text x="825" y="331" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#047857">未见 ✓</text>
+  <text x="985" y="331" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#64748b">超出前 2</text>
+
+  <rect x="494" y="350" width="962" height="66" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <text x="510" y="372" font-family="Microsoft YaHei, sans-serif" font-size="13.5" font-weight="700" fill="#065f46">filter_first（本文）：先剔已见，再取前 2</text>
+  <text x="510" y="396" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#065f46">→ 交付 CLIP_05 与 CLIP_21，本轮拿到 2 段新证据</text>
+
+  <rect x="494" y="426" width="962" height="66" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="510" y="448" font-family="Microsoft YaHei, sans-serif" font-size="13.5" font-weight="700" fill="#991b1b">topk_first（M3 原版）：先取前 2，再剔已见</text>
+  <text x="510" y="472" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#991b1b">→ 取到 #1 #2，两段都已交付过 → 本轮空手，而 #3 #4 可用</text>
+
+  <text x="494" y="510" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#475569">
+    参考实现在取回阶段即截断到 top-k，随后才剔除已交付片段——这就是上例的来源
+  </text>
+
+    <!-- ================= PANEL 2 : ONE ROUND COST ================= -->
+  <rect x="470" y="540" width="1010" height="380" rx="12" fill="#fcfdfd" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="494" y="572" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="700" fill="#0f172a">② 一轮里发生什么：全部候选 → 一次本地排序</text>
+  <text x="494" y="596" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#64748b">m3-control 不调用任何外部判定接口，排序完全在本地完成</text>
+
+  <rect x="494" y="614" width="150" height="54" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.3"/>
+  <text x="569" y="636" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#0f172a">可见片段</text>
+  <text x="569" y="656" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">按 before_clip 截断</text>
+
+  <rect x="686" y="614" width="180" height="54" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.3"/>
+  <text x="776" y="636" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#0f172a">余弦打分</text>
+  <text x="776" y="656" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">节点 → 片段取 max</text>
+
+  <rect x="908" y="614" width="160" height="54" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.3"/>
+  <text x="988" y="636" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#0f172a">排序</text>
+  <text x="988" y="656" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">本地矩阵运算</text>
+
+  <rect x="1110" y="614" width="160" height="54" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.3"/>
+  <text x="1190" y="636" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#0f172a">取前 2</text>
+  <text x="1190" y="656" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">未见者优先</text>
+
+  <rect x="1312" y="614" width="150" height="54" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.3"/>
+  <text x="1387" y="636" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#0f172a">进入上下文</text>
+  <text x="1387" y="656" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">1–2 段</text>
+
+  <line x1="644" y1="641" x2="684" y2="641" stroke="#334155" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="866" y1="641" x2="906" y2="641" stroke="#334155" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="1068" y1="641" x2="1108" y2="641" stroke="#334155" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="1270" y1="641" x2="1310" y2="641" stroke="#334155" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+  <text x="494" y="712" font-family="Microsoft YaHei, sans-serif" font-size="13" font-weight="600" fill="#0f172a">四个容易混的口径</text>
+  <text x="494" y="738" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">· 打分对象是节点，片段分数 = 该片段所有节点余弦的最大值（mode = max）</text>
+  <text x="494" y="762" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">· 每轮只做一次向量运算，没有外部调用，判定费用为 0</text>
+  <text x="494" y="786" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">· 交付上限 2 段；不足 2 段时按实际条数交付</text>
+  <text x="494" y="810" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">· 阈值 τ 决定“进不进得来”：τ=0 时不设限，全部候选按名次竞争前 2</text>
+  <text x="494" y="840" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#475569">· 端到端：web 续跑段 2,590 题 / 1,432.9 分钟，平均 33.2 秒/题，平均 2.96 轮</text>
+
+  <!-- ================= PANEL 3 : HOW M3-CONTROL SCORES ================= -->
+  <rect x="470" y="940" width="1010" height="520" rx="12" fill="#fcfdfd" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="494" y="972" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="700" fill="#0f172a">③ m3-control 怎么给一段片段打分</text>
+  <text x="494" y="996" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#64748b">打分单位是节点，片段取最大；它衡量“像不像”，不衡量“能不能答”</text>
+
+  <rect x="494" y="1014" width="300" height="62" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.3"/>
+  <text x="508" y="1036" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#0f172a">① 编码查询</text>
+  <text x="508" y="1056" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">text-embedding-3-large</text>
+  <text x="508" y="1070" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">把问题变成一个向量</text>
+
+  <rect x="494" y="1090" width="300" height="62" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.3"/>
+  <text x="508" y="1112" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#0f172a">② 节点级余弦</text>
+  <text x="508" y="1132" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">每个 episodic / semantic 节点</text>
+  <text x="508" y="1146" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">与查询向量算余弦相似度</text>
+
+  <rect x="494" y="1166" width="300" height="62" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.3"/>
+  <text x="508" y="1188" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#0f172a">③ 片段取最大值</text>
+  <text x="508" y="1208" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">同一片段下所有节点的分数取 max</text>
+  <text x="508" y="1222" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">一个节点像，整段就被抬起来</text>
+
+  <rect x="820" y="1014" width="636" height="62" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="836" y="1036" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="700" fill="#1e3a8a">输出：一个余弦分数；全量 423,079 个候选，中位数 0.375</text>
+  <text x="836" y="1058" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#1e40af">没有判定、没有外部调用；同一查询下所有候选一次算完</text>
+
+  <rect x="820" y="1090" width="636" height="138" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="836" y="1112" font-family="Microsoft YaHei, sans-serif" font-size="12" font-weight="600" fill="#0f172a">它到底在量什么</text>
+  <text x="836" y="1136" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">余弦只回答一个问题：这段文本的向量与问题的向量有多接近。</text>
+  <text x="836" y="1158" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">它不知道答案在不在里面——只要用词接近、话题相似，分数就高。</text>
+  <text x="836" y="1184" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b91c1c">于是“重复问题用词但没有事实”的片段，会排到“给了具体数值”的前面。</text>
+  <text x="836" y="1210" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#64748b">这是“门槛量错了东西”的根源，也是 82.4% 候选卡在 0.5 以下的原因</text>
+
+  <text x="494" y="1256" font-family="Microsoft YaHei, sans-serif" font-size="13" font-weight="600" fill="#0f172a">同一个问题下，三个候选的实际排名（示意）</text>
+
+  <rect x="494" y="1270" width="962" height="26" fill="#eef2f6"/>
+  <text x="508" y="1288" font-family="Microsoft YaHei, sans-serif" font-size="11.5" font-weight="600" fill="#334155">候选片段内容</text>
+  <text x="1010" y="1288" font-family="Microsoft YaHei, sans-serif" font-size="11.5" font-weight="600" fill="#334155">余弦</text>
+  <text x="1080" y="1288" font-family="Microsoft YaHei, sans-serif" font-size="11.5" font-weight="600" fill="#334155">结局</text>
+
+  <text x="508" y="1316" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#334155">"Which collection has the highest starting price…"</text>
+  <text x="1010" y="1316" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b91c1c">0.61</text>
+  <text x="1080" y="1316" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b91c1c">第 1 名，但没有事实</text>
+
+  <text x="508" y="1344" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#334155">"The five collections are displayed in this order…"</text>
+  <text x="1010" y="1344" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b91c1c">0.59</text>
+  <text x="1080" y="1344" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b91c1c">第 2 名，也没给数值</text>
+
+  <text x="508" y="1372" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#334155">"The Pirate Ship Float starts at $24.99, highest of the five."</text>
+  <text x="1010" y="1372" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#047857">0.57</text>
+  <text x="1080" y="1372" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#047857">第 3 名，被挤出前 2</text>
+
+  <text x="494" y="1404" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#475569">
+    前两名都是“词面像、没事实”的片段，真正可答的那段排第三——这就是判定式重排要解决的问题
+  </text>
+  <text x="494" y="1428" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#475569">
+    全量 423,079 个候选：中位数 0.375，82.4% 低于 0.5，四份日志的误伤率 75.1%–93.2%
+  </text>
+  <text x="494" y="1452" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#94a3b8">
+    注：片段内容与分数为示意；分数分布取自四份检索日志
+  </text>
+
+  <!-- ================= PANEL 4 : MULTI-ROUND ================= -->
+  <rect x="470" y="1480" width="1010" height="540" rx="12" fill="#fcfdfd" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="494" y="1512" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="700" fill="#0f172a">④ 多轮检索：一轮没答出来，就换一个问法再来</text>
+  <text x="494" y="1536" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#64748b">每轮：问一次 → 全量余弦排序 → 交 1–2 段 → 模型判断够不够</text>
+
+  <rect x="494" y="1554" width="300" height="360" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.3"/>
+  <text x="510" y="1578" font-family="Microsoft YaHei, sans-serif" font-size="13.5" font-weight="700" fill="#0f172a">第 1 轮</text>
+  <text x="510" y="1602" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">查询：Alice argument reaction</text>
+  <text x="510" y="1624" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">候选：全部可见片段</text>
+  <text x="510" y="1648" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#334155">clip 8  → 0.44  第 1 名</text>
+  <text x="510" y="1668" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#334155">clip 15 → 0.41  第 2 名</text>
+  <text x="510" y="1688" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#94a3b8">其余片段 0.21–0.38</text>
+  <text x="510" y="1714" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#047857">交付：clip 8 + clip 15</text>
+  <text x="510" y="1738" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">current_clips = {8, 15}</text>
+  <text x="510" y="1766" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b45309">模型：信息不足，继续搜</text>
+  <text x="510" y="1796" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#64748b">clip 8 只说“两人争吵”，</text>
+  <text x="510" y="1812" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#64748b">没给争吵后的行为</text>
+
+  <rect x="824" y="1554" width="300" height="360" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.3"/>
+  <text x="840" y="1578" font-family="Microsoft YaHei, sans-serif" font-size="13.5" font-weight="700" fill="#0f172a">第 2 轮</text>
+  <text x="840" y="1602" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">查询：Alice action after CLIP_9</text>
+  <text x="840" y="1624" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">候选：重新全量排序</text>
+  <text x="840" y="1648" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#334155">clip 9  → 0.52  第 1 名</text>
+  <text x="840" y="1668" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#334155">clip 22 → 0.47  第 2 名</text>
+  <text x="840" y="1688" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#94a3b8">clip 8 / 15 即使排前也剔除</text>
+  <text x="840" y="1714" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#047857">交付：clip 9 + clip 22</text>
+  <text x="840" y="1738" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">current_clips = {8,15,9,22}</text>
+  <text x="840" y="1766" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#047857">模型：可以作答</text>
+  <text x="840" y="1796" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#64748b">clip 9 给出“离开房间并</text>
+  <text x="840" y="1812" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#64748b">打电话给妹妹”这一事实</text>
+
+  <rect x="1154" y="1554" width="302" height="360" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.3"/>
+  <text x="1170" y="1578" font-family="Microsoft YaHei, sans-serif" font-size="13.5" font-weight="700" fill="#0f172a">第 3–5 轮（若仍不足）</text>
+  <text x="1170" y="1602" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">重复同样的循环</text>
+  <text x="1170" y="1626" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">每次查询都覆盖上一轮</text>
+  <text x="1170" y="1646" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">已交付的片段</text>
+  <text x="1170" y="1676" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b45309">第 5 轮结束仍未答出</text>
+  <text x="1170" y="1696" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b45309">→ 强制基于已有证据作答</text>
+  <text x="1170" y="1730" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#64748b">平均轮次 2.96</text>
+  <text x="1170" y="1746" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#64748b">2,590 题 / 1,432.9 分钟</text>
+  <text x="1170" y="1776" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#64748b">平均 33.2 秒/题</text>
+  <text x="1170" y="1792" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#64748b">批大小 4</text>
+
+  <line x1="794" y1="1730" x2="822" y2="1730" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1124" y1="1730" x2="1152" y2="1730" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <text x="494" y="1948" font-family="Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#0f172a">两条规则撑起整个循环</text>
+  <text x="494" y="1974" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#475569">· current_clips 只增不减：交付过的片段永不再交付，所以每轮都在“找新证据”</text>
+  <text x="494" y="1996" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#475569">· τ=0 时没有任何分数门槛，真正决定交付哪两段的是余弦排序——这正是问题所在</text>
+  <text x="494" y="2014" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#94a3b8">注：题面与分数为示意，用于说明循环与交付规则</text>
+</svg>
+
+</div>
+</body>
+</html>
