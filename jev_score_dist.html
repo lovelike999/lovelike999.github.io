@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jev 判定分数分布（650,002 条）</title>
+<style>
+  body { margin: 0; padding: 24px; background: #f8fafc; display: flex; justify-content: center; }
+  .card { width: 100%; max-width: 1120px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06); overflow: hidden; }
+  svg { display: block; width: 100%; height: auto; }
+  @media (max-width: 800px) { body { padding: 8px; } }
+</style>
+</head>
+<body>
+<div class="card"><svg xmlns="http://www.w3.org/2000/svg" width="1120" height="640" viewBox="0 0 1120 640">
+  <rect width="1120" height="640" fill="#ffffff"/>
+
+  <text x="90" y="40" font-family="Microsoft YaHei, sans-serif" font-size="20" font-weight="700" fill="#0f172a">
+    Jev 判定分数分布（650,002 条缓存判定）
+  </text>
+  <text x="90" y="64" font-family="Microsoft YaHei, sans-serif" font-size="12.5" fill="#64748b">
+    横轴为接口返回的 0–1 充分性分数，柱宽 0.05；纵轴为该区间的判定占比
+  </text>
+
+  <!-- grid -->
+  <line x1="90" y1="530" x2="1050" y2="530" stroke="#334155" stroke-width="1.4"/>
+  <line x1="90" y1="90" x2="90" y2="530" stroke="#334155" stroke-width="1.4"/>
+  <line x1="90" y1="383" x2="1050" y2="383" stroke="#e2e8f0"/>
+  <line x1="90" y1="237" x2="1050" y2="237" stroke="#e2e8f0"/>
+  <line x1="90" y1="90" x2="1050" y2="90" stroke="#e2e8f0" stroke-dasharray="4 4"/>
+
+  <text x="82" y="534" text-anchor="end" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">0</text>
+  <text x="82" y="387" text-anchor="end" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">5%</text>
+  <text x="82" y="241" text-anchor="end" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">10%</text>
+  <text x="82" y="94" text-anchor="end" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">15%</text>
+  <text x="34" y="310" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#475569" transform="rotate(-90 34 310)">占比</text>
+
+  <!-- bars -->
+  <rect x="95"  y="90"    width="38" height="440" fill="#ef4444"/>
+  <rect x="143" y="105.7" width="38" height="424.3" fill="#3b82f6"/>
+  <rect x="191" y="341.2" width="38" height="188.8" fill="#3b82f6"/>
+  <rect x="239" y="409.0" width="38" height="121.0" fill="#3b82f6"/>
+  <rect x="287" y="442.4" width="38" height="87.6" fill="#3b82f6"/>
+  <rect x="335" y="464.2" width="38" height="65.8" fill="#3b82f6"/>
+  <rect x="383" y="476.9" width="38" height="53.1" fill="#3b82f6"/>
+  <rect x="431" y="484.9" width="38" height="45.1" fill="#3b82f6"/>
+  <rect x="479" y="489.8" width="38" height="40.2" fill="#3b82f6"/>
+  <rect x="527" y="492.7" width="38" height="37.3" fill="#3b82f6"/>
+  <rect x="575" y="496.7" width="38" height="33.3" fill="#3b82f6"/>
+  <rect x="623" y="499.4" width="38" height="30.6" fill="#3b82f6"/>
+  <rect x="671" y="501.5" width="38" height="28.5" fill="#3b82f6"/>
+  <rect x="719" y="503.1" width="38" height="26.9" fill="#3b82f6"/>
+  <rect x="767" y="503.1" width="38" height="26.9" fill="#3b82f6"/>
+  <rect x="815" y="504.4" width="38" height="25.6" fill="#3b82f6"/>
+  <rect x="863" y="505.7" width="38" height="24.3" fill="#3b82f6"/>
+  <rect x="911" y="504.3" width="38" height="25.7" fill="#3b82f6"/>
+  <rect x="959" y="502.7" width="38" height="27.3" fill="#3b82f6"/>
+  <rect x="1007" y="507.2" width="38" height="22.8" fill="#3b82f6"/>
+
+  <!-- broken-axis marker on first bar -->
+  <path d="M 95 108 L 133 96 M 95 100 L 133 112" stroke="#ffffff" stroke-width="2.4"/>
+  <text x="114" y="84" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="12" font-weight="700" fill="#b91c1c">54.5%</text>
+
+  <!-- threshold -->
+  <line x1="138" y1="86" x2="138" y2="530" stroke="#b91c1c" stroke-width="1.6" stroke-dasharray="6 5"/>
+  <text x="146" y="82" font-family="Microsoft YaHei, sans-serif" font-size="12" font-weight="600" fill="#b91c1c">阈值 0.05</text>
+
+  <!-- p95 tick -->
+  <line x1="771.6" y1="530" x2="771.6" y2="538" stroke="#b45309" stroke-width="1.6"/>
+  <text x="771.6" y="552" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b45309">p95 = 0.71</text>
+
+  <!-- x ticks -->
+  <text x="90"  y="552" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">0</text>
+  <text x="282" y="552" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">0.2</text>
+  <text x="474" y="552" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">0.4</text>
+  <text x="666" y="552" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">0.6</text>
+  <text x="858" y="552" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">0.8</text>
+  <text x="1050" y="552" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">1.0</text>
+  <text x="570" y="576" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#475569">充分性分数 noul</text>
+
+  <!-- stats box -->
+  <rect x="700" y="104" width="340" height="96" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="714" y="126" font-family="Microsoft YaHei, sans-serif" font-size="12" font-weight="600" fill="#0f172a">n = 650,002</text>
+  <text x="714" y="148" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#475569">中位数 0.04 · p75 0.14 · p95 0.71</text>
+  <text x="714" y="170" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#b91c1c">54.5% 低于 0.05；68.9% 低于 0.10</text>
+  <text x="714" y="190" font-family="Microsoft YaHei, sans-serif" font-size="11.5" fill="#1d4ed8">9.3% 在 0.50 以上</text>
+
+  <!-- footnotes -->
+  <text x="90" y="604" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#475569">
+    0.30 之后每个 0.05 区间稳定在 0.8–1.0%——“高置信”是一条宽而平的带，不是尖峰
+  </text>
+  <text x="90" y="624" font-family="Microsoft YaHei, sans-serif" font-size="12" fill="#94a3b8">
+    所有分数落在 0.01–0.99，没有恰好 0 或 1；数据来自 data/results/jev_cache.jsonl
+  </text>
+</svg>
+
+</div>
+</body>
+</html>
