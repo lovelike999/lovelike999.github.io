@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>基线 v0@0.5：参考实现的检索流程</title>
+<style>
+  body{margin:0;padding:24px;background:#f8fafc;display:flex;justify-content:center;font-family:"Microsoft YaHei",sans-serif}
+  .container{width:100%;max-width:1500px;background:#fff;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);overflow:hidden}
+  svg{display:block;width:100%;height:auto}
+</style>
+</head>
+<body>
+<div class="container">
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1440" viewBox="0 0 1500 1440">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#334155"/></marker>
+    <marker id="l" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b45309"/></marker>
+  </defs>
+  <rect width="1500" height="1440" fill="#ffffff"/>
+
+  <text x="40" y="38" font-size="21" font-weight="700" fill="#0f172a">基线 v0@0.5：参考实现的检索流程</text>
+  <text x="40" y="62" font-size="13" fill="#64748b">没有外部判定接口、没有重排；每一步都由同一套余弦分数与一个硬编码阈值驱动</text>
+
+  <!-- LEFT FLOW -->
+  <rect x="40" y="86" width="430" height="52" rx="9" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.3"/>
+  <text x="255" y="108" text-anchor="middle" font-size="15" font-weight="600" fill="#0f172a">问题 q + 已见证据</text>
+  <text x="255" y="127" text-anchor="middle" font-size="12" fill="#475569">上下文以“历史检索轮”形式累积</text>
+
+  <rect x="40" y="166" width="430" height="52" rx="9" fill="#eef2ff" stroke="#6366f1" stroke-width="1.3"/>
+  <text x="255" y="188" text-anchor="middle" font-size="15" font-weight="600" fill="#0f172a">M3-Control：回答还是继续检索？</text>
+  <text x="255" y="207" text-anchor="middle" font-size="12" fill="#475569">输出 [ANSWER] 或 [SEARCH] + 查询</text>
+
+  <rect x="40" y="246" width="430" height="52" rx="9" fill="#fef2f2" stroke="#ef4444" stroke-width="1.6"/>
+  <text x="255" y="268" text-anchor="middle" font-size="15" font-weight="600" fill="#991b1b">余弦检索 + 阈值 0.5</text>
+  <text x="255" y="287" text-anchor="middle" font-size="12" fill="#991b1b">分数 &lt; 0.5 的片段直接丢弃</text>
+
+  <rect x="40" y="326" width="430" height="52" rx="9" fill="#fef2f2" stroke="#ef4444" stroke-width="1.3"/>
+  <text x="255" y="348" text-anchor="middle" font-size="15" font-weight="600" fill="#0f172a">按分数排序，先取前 2</text>
+  <text x="255" y="367" text-anchor="middle" font-size="12" fill="#475569">截断发生在去重之前（topk_first）</text>
+
+  <rect x="40" y="406" width="430" height="52" rx="9" fill="#fef2f2" stroke="#ef4444" stroke-width="1.3"/>
+  <text x="255" y="428" text-anchor="middle" font-size="15" font-weight="600" fill="#0f172a">再剔除已交付过的片段</text>
+  <text x="255" y="447" text-anchor="middle" font-size="12" fill="#475569">若前 2 都已见过 → 本轮空手</text>
+
+  <rect x="40" y="486" width="430" height="52" rx="9" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.3"/>
+  <text x="255" y="508" text-anchor="middle" font-size="15" font-weight="600" fill="#0f172a">结果为空？→ route_switch</text>
+  <text x="255" y="527" text-anchor="middle" font-size="12" fill="#475569">换提示词，下一轮换个方向问</text>
+
+  <rect x="40" y="566" width="430" height="52" rx="9" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.3"/>
+  <text x="255" y="588" text-anchor="middle" font-size="15" font-weight="600" fill="#0f172a">证据进入上下文</text>
+  <text x="255" y="607" text-anchor="middle" font-size="12" fill="#475569">交付 0–2 段，取决于门槛与已见</text>
+
+  <polygon points="255,648 352,684 255,720 158,684" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.3"/>
+  <text x="255" y="689" text-anchor="middle" font-size="13.5" font-weight="600" fill="#0f172a">满 5 轮？</text>
+
+  <rect x="40" y="754" width="430" height="52" rx="9" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.3"/>
+  <text x="255" y="776" text-anchor="middle" font-size="15" font-weight="600" fill="#0f172a">末轮：强制作答</text>
+  <text x="255" y="795" text-anchor="middle" font-size="12" fill="#475569">prompt_answer_with_retrieval_final</text>
+
+  <rect x="40" y="834" width="430" height="44" rx="9" fill="#0f172a"/>
+  <text x="255" y="861" text-anchor="middle" font-size="14" font-weight="600" fill="#ffffff">判官判分 → 准确率</text>
+
+  <line x1="255" y1="138" x2="255" y2="164" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="255" y1="218" x2="255" y2="244" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="255" y1="298" x2="255" y2="324" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="255" y1="378" x2="255" y2="404" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="255" y1="458" x2="255" y2="484" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="255" y1="538" x2="255" y2="564" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="255" y1="618" x2="255" y2="646" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="255" y1="720" x2="255" y2="752" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="255" y1="806" x2="255" y2="832" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="268" y="742" font-size="12" fill="#475569">是</text>
+  <path d="M158 684 L 20 684 L 20 192 L 38 192" fill="none" stroke="#b45309" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#l)"/>
+  <text x="14" y="440" text-anchor="middle" font-size="12" fill="#b45309" transform="rotate(-90 14 440)">否：下一轮</text>
+
+  <!-- PANEL 1: threshold gate -->
+  <rect x="520" y="86" width="940" height="250" rx="10" fill="#fcfdfd" stroke="#cbd5e1"/>
+  <text x="546" y="114" font-size="16" font-weight="700" fill="#0f172a">① 这道门的实际效果：把大多数候选挡在门外</text>
+  <text x="546" y="136" font-size="12" fill="#64748b">阈值作用在余弦分数上；它先于排序生效，被挡掉的候选连比较的机会都没有</text>
+  <text x="546" y="166" font-size="13" fill="#334155">· 硬编码位置：control.py:125 传入 threshold = 0.5</text>
+  <text x="546" y="188" font-size="13" fill="#334155">· 同名信号在别处是 0：retrieve.py:76 签名默认 0；processing_config.json:19 写 0</text>
+  <text x="546" y="210" font-size="13" fill="#334155">· 全仓库没有任何代码读取配置里的 retrieval_threshold 键</text>
+  <text x="546" y="238" font-size="13" fill="#991b1b">实测分布：423,079 个候选，中位余弦 0.375，82.4% 低于 0.5（逐日志 75.1%–93.2%）</text>
+  <text x="546" y="262" font-size="13" fill="#991b1b">后果：最极端的 robot 日志里，40.5% 的检索轮返回空</text>
+  <text x="546" y="288" font-size="12.5" fill="#475569">空轮之后模型只能靠参数知识作答，或再搜一轮——这正是门槛修复能带来 3.9–5.9 分的原因。</text>
+  <text x="546" y="312" font-size="12" fill="#94a3b8">代码：retrieve_from_videograph（retrieve.py:76）；阈值过滤在 :133 与 :135</text>
+
+  <!-- PANEL 2: topk_first -->
+  <rect x="520" y="350" width="940" height="250" rx="10" fill="#fcfdfd" stroke="#cbd5e1"/>
+  <text x="546" y="378" font-size="16" font-weight="700" fill="#0f172a">② 先截断、后去重：可用证据被"自己人"挤掉</text>
+  <text x="546" y="400" font-size="12" fill="#64748b">retrieve.py:133 先做 [:topk]；search() 的 :260 才剔除 current_clips</text>
+  <rect x="546" y="414" width="888" height="24" fill="#eef2f6"/>
+  <text x="562" y="431" font-size="12" font-weight="600" fill="#334155">排名</text><text x="632" y="431" font-size="12" font-weight="600" fill="#334155">片段</text>
+  <text x="752" y="431" font-size="12" font-weight="600" fill="#334155">余弦</text><text x="862" y="431" font-size="12" font-weight="600" fill="#334155">已交付？</text>
+  <text x="992" y="431" font-size="12" font-weight="600" fill="#334155">topk_first 结局</text>
+  <text x="562" y="456" font-size="12.5" fill="#334155">#1</text><text x="632" y="456" font-size="12.5" fill="#334155">CLIP_37</text><text x="752" y="456" font-size="12.5" fill="#334155">0.91</text><text x="862" y="456" font-size="12.5" fill="#b91c1c">已见</text><text x="992" y="456" font-size="12.5" fill="#334155">取到 → 剔除</text>
+  <text x="562" y="478" font-size="12.5" fill="#334155">#2</text><text x="632" y="478" font-size="12.5" fill="#334155">CLIP_12</text><text x="752" y="478" font-size="12.5" fill="#334155">0.88</text><text x="862" y="478" font-size="12.5" fill="#b91c1c">已见</text><text x="992" y="478" font-size="12.5" fill="#334155">取到 → 剔除</text>
+  <text x="562" y="500" font-size="12.5" fill="#334155">#3</text><text x="632" y="500" font-size="12.5" fill="#334155">CLIP_05</text><text x="752" y="500" font-size="12.5" fill="#334155">0.84</text><text x="862" y="500" font-size="12.5" fill="#047857">未见</text><text x="992" y="500" font-size="12.5" fill="#991b1b">根本没看到</text>
+  <text x="546" y="526" font-size="12.5" fill="#991b1b">结果：本轮空手，而 #3 #4 明明可用——因为截断发生在去重之前。</text>
+  <text x="546" y="548" font-size="12.5" fill="#475569">这是"顺序"缺陷，与本图的阈值缺陷相互独立；两者各自都能让一轮返回空。</text>
+  <text x="546" y="572" font-size="12" fill="#94a3b8">实测（web 前 500 题）：topk_first 空轮率 14.8%，filter_first 10.5%</text>
+
+  <!-- PANEL 3: cost -->
+  <rect x="520" y="614" width="940" height="220" rx="10" fill="#fcfdfd" stroke="#cbd5e1"/>
+  <text x="546" y="642" font-size="16" font-weight="700" fill="#0f172a">③ 成本结构：没有判定调用，但时间花在生成上</text>
+  <text x="546" y="668" font-size="13" fill="#334155">· 外部判定调用：0 次（没有 Jev、没有 cross-encoder）</text>
+  <text x="546" y="690" font-size="13" fill="#334155">· 500 题实测：约 3 小时 50 分，平均 26.8 秒/题</text>
+  <text x="546" y="712" font-size="13" fill="#334155">· 时间构成：generate 94%（25.1 s/题）｜retrieve 2.1 s/题｜judge 0.36 s/题</text>
+  <text x="546" y="734" font-size="13" fill="#334155">· 每轮只做一次向量运算 + 一次生成；轮数由模型自己决定（≤5）</text>
+  <text x="546" y="762" font-size="12.5" fill="#991b1b">所以"零成本"只对判定调用成立：时间并不便宜，它主要被作答生成吃掉。</text>
+  <text x="546" y="786" font-size="12" fill="#94a3b8">数据来源：logs/web_th05_500.log 的 batch 计时分解</text>
+  <text x="546" y="808" font-size="12" fill="#94a3b8">注：本次基线跑在 472/500 处中断，上表为已完成部分的时间构成</text>
+
+  <!-- PANEL 4: code map -->
+  <rect x="520" y="850" width="940" height="250" rx="10" fill="#fcfdfd" stroke="#cbd5e1"/>
+  <text x="546" y="878" font-size="16" font-weight="700" fill="#0f172a">④ 代码位置速查（mmagent/retrieve.py）</text>
+  <text x="546" y="904" font-size="12.5" fill="#334155">检索入口　answer_with_retrieval　　:277　主循环 range(max_retrieval_steps)</text>
+  <text x="546" y="926" font-size="12.5" fill="#334155">动作决策　generate_action　　　　　:152　解析 [ANSWER] / [SEARCH]（:183 / :187）</text>
+  <text x="546" y="948" font-size="12.5" fill="#334155">余弦召回　retrieve_from_videograph :76　阈值过滤 + [:topk]（:133 / :135）</text>
+  <text x="546" y="970" font-size="12.5" fill="#334155">去重　　　search　　　　　　　　　:237　剔 current_clips（:260）</text>
+  <text x="546" y="992" font-size="12.5" fill="#334155">空结果　　route_switch　　　　　　 :350　切到 new_direction 提示词</text>
+  <text x="546" y="1014" font-size="12.5" fill="#334155">强制作答　末轮分支　　　　　　　　:326　prompt_answer_with_retrieval_final</text>
+  <text x="546" y="1036" font-size="12.5" fill="#334155">阈值传入　control.py　　　　　　　 :125　search(..., threshold=0.5, ...)</text>
+  <text x="546" y="1064" font-size="12" fill="#94a3b8">对照：retrieve.py:76 的签名默认是 threshold=0；配置文件写 0；只有调用点写 0.5</text>
+
+  <!-- PANEL 5: results -->
+  <rect x="520" y="1112" width="940" height="300" rx="10" fill="#fcfdfd" stroke="#cbd5e1"/>
+  <text x="546" y="1140" font-size="16" font-weight="700" fill="#0f172a">⑤ 基线成绩（v0@0.5）</text>
+  <text x="546" y="1170" font-size="13.5" fill="#334155">gpt-4o 判官：robot 31.03%（n=1276）｜web 48.01%（n=3214）</text>
+  <text x="546" y="1194" font-size="13.5" fill="#334155">deepseek 判官：robot 25.78%｜web 40.32%</text>
+  <text x="546" y="1218" font-size="13.5" fill="#334155">gpt-5-mini 判官：robot 27.90%｜web 44.77%</text>
+  <text x="546" y="1246" font-size="13" fill="#991b1b">换判官，同一批回答的分数移动 3.3–7.7 分——比本图里那两个缺陷的量级还大。</text>
+  <text x="546" y="1276" font-size="13" fill="#334155">复现对照：论文报告 30.7% / 48.9%；gpt-4o 口径下为 31.0% / 48.0%，差 ≤1.0 分</text>
+  <text x="546" y="1300" font-size="12.5" fill="#475569">后续工作报告的同一基线聚集在 robot 30.5–30.8、web 45.6–48.9</text>
+  <text x="546" y="1330" font-size="12.5" fill="#475569">本图描述的就是这一行基线；它不含 multiquery，也不含任何重排。</text>
+  <text x="546" y="1360" font-size="12" fill="#94a3b8">复现差距与阈值差异一致，但本文不据此主张因果：只主张"同一份代码按配置读与按实际执行读是两个系统"。</text>
+</svg>
+</div>
+</body>
+</html>
