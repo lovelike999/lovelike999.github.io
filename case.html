@@ -82,6 +82,16 @@
       <tr><td>消融：<b>去掉 mq</b>　<code>{}@0 + Jev</code></td><td><code>best type of broccoli for salad when preparing in advance</code></td></tr>
     </table>
     <p class="note">mq 版保留了“dinner is still a long time away”这个时间条件；无 mq 版把它压缩成“preparing in advance”。</p>
+    <table style="margin-top:8px">
+      <tr><th style="width:44px">轮</th><th>ours（`{mq}`@0+Jev）</th><th>去掉 mq（`{}`@0+Jev）</th></tr>
+      <tr><td>1</td>
+          <td><code>best type of broccoli for salad when dinner is still a long time away</code></td>
+          <td><code>best type of broccoli for salad when preparing in advance</code></td></tr>
+      <tr><td>2</td>
+          <td><code>best type of broccoli for salad when dinner is still a long time away relation</code></td>
+          <td>第 1 轮后已作答，无第 2 轮</td></tr>
+    </table>
+    <p class="note">ours 的第 2 轮只是在原查询后追加了 “relation”，措辞变化很小——而案例二、三里的改写幅度要大得多。</p>
   </div>
 
   <div class="card">
