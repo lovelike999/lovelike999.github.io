@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>案例：一道题的完整检索轨迹（三种配置）</title>
+<style>
+  :root{
+    --ink:#0f172a; --mut:#64748b; --line:#e2e8f0;
+    --blue:#3b82f6; --red:#ef4444; --green:#10b981; --amber:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 20px;background:#f6f8fb;color:var(--ink);
+       font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;line-height:1.65}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px}
+  .sub{color:var(--mut);font-size:14px;margin-bottom:24px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;
+        padding:20px 24px;margin-bottom:18px;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  h2{font-size:17px;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .num{display:inline-flex;width:24px;height:24px;border-radius:50%;
+       background:#0f172a;color:#fff;font-size:13px;align-items:center;justify-content:center}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{background:#f1f5f9;font-weight:600;font-size:13px;color:#334155}
+  td.numv{font-variant-numeric:tabular-nums}
+  code{background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:13px}
+  .q{background:#f8fafc;border-left:4px solid var(--blue);padding:14px 16px;border-radius:6px}
+  .q .label{font-size:12px;color:var(--mut);margin-bottom:4px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .bar{height:8px;border-radius:4px;background:#e2e8f0;position:relative;min-width:90px}
+  .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;display:block}
+  .b-cos i{background:var(--blue)}
+  .b-noul i{background:var(--red)}
+  .up{color:#047857;font-weight:600}
+  .down{color:#b91c1c;font-weight:600}
+  .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;
+       border:1px solid var(--line);color:var(--mut)}
+  .ok{color:#047857;font-weight:700}
+  .bad{color:#b91c1c;font-weight:700}
+  .clip{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13.5px}
+  .clip b{color:#0f172a}
+  .note{font-size:13px;color:var(--mut)}
+  .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:760px){.kpi{grid-template-columns:1fr}}
+  .kpi div{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:12px}
+  .kpi b{display:block;font-size:15px;margin-bottom:4px}
+  footer{color:var(--mut);font-size:12.5px;margin-top:28px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>三个案例：同一套检索轨迹，三种配置</h1>
+  <div class="sub">
+    数据来自 <code>search_log_web_jev_mq.jsonl</code> / <code>search_log_web_jev_v0.jsonl</code> 与对应判定文件；
+    判定口径 gpt-4o。图中片段编号与分数均为真实日志，未经改写。
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:10px">案例一：余弦排序 ≠ 可答性</h2>
+    <p class="note" style="margin:0">
+      余弦最高的片段被判定器压到第三；已交付片段在第二轮被正确剔除。三配置中 ours 与“去掉 mq”都答对，
+      no-pool 答错。
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="q">
+      <div class="label">QID <code>GqUDWHUD2WY_Q5</code> · web 域 · Person Understanding</div>
+      <div><b>问题：</b>What type of broccoli should be used for making salad if dinner is still a long time away?</div>
+      <div style="margin-top:6px"><b>标准答案：</b>Raw broccoli.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">1</span>生成查询</h2>
+    <table>
+      <tr><th style="width:180px">配置</th><th>第 1 轮 query</th></tr>
+      <tr><td><b>ours</b>　<code>{mq}@0 + Jev</code></td><td><code>best type of broccoli for salad when dinner is still a long time away</code></td></tr>
+      <tr><td>消融：<b>去掉 mq</b>　<code>{}@0 + Jev</code></td><td><code>best type of broccoli for salad when preparing in advance</code></td></tr>
+    </table>
+    <p class="note">mq 版保留了“dinner is still a long time away”这个时间条件；无 mq 版把它压缩成“preparing in advance”。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>余弦召回 top-24（此处列前 4）</h2>
+    <table>
+      <tr><th>clip</th><th>ours 余弦</th><th></th><th>去 mq 余弦</th><th></th></tr>
+      <tr><td><b>41</b></td><td class="numv">0.522</td>
+          <td><div class="bar b-cos"><i style="width:93%"></i></div></td>
+          <td class="numv">0.566</td><td><div class="bar b-cos"><i style="width:100%"></i></div></td></tr>
+      <tr><td>43</td><td class="numv">0.495</td>
+          <td><div class="bar b-cos"><i style="width:88%"></i></div></td>
+          <td class="numv">0.481</td><td><div class="bar b-cos"><i style="width:85%"></i></div></td></tr>
+      <tr><td>42</td><td class="numv">0.488</td>
+          <td><div class="bar b-cos"><i style="width:87%"></i></div></td>
+          <td class="numv">0.542</td><td><div class="bar b-cos"><i style="width:96%"></i></div></td></tr>
+      <tr><td>45</td><td class="numv">0.469</td>
+          <td><div class="bar b-cos"><i style="width:84%"></i></div></td>
+          <td class="numv">0.428</td><td><div class="bar b-cos"><i style="width:76%"></i></div></td></tr>
+    </table>
+    <p class="note">余弦只负责“进不进池子”：τ = 0，所以这 24 个候选全部通过，不设分数门槛。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>Jev 逐候选打分（mq 臂第 1 轮）</h2>
+    <table>
+      <tr><th>clip</th><th>余弦</th><th>noul</th><th></th><th>名次变化</th></tr>
+      <tr><td><b>43</b></td><td class="numv">0.495</td><td class="numv"><b>0.57</b></td>
+          <td><div class="bar b-noul"><i style="width:57%"></i></div></td>
+          <td class="up">第 2 → 第 1 ▲</td></tr>
+      <tr><td>45</td><td class="numv">0.469</td><td class="numv">0.22</td>
+          <td><div class="bar b-noul"><i style="width:22%"></i></div></td>
+          <td class="up">第 4 → 第 2 ▲</td></tr>
+      <tr><td><b>41</b></td><td class="numv">0.522</td><td class="numv">0.16</td>
+          <td><div class="bar b-noul"><i style="width:16%"></i></div></td>
+          <td class="down">第 1 → 第 3 ▼</td></tr>
+      <tr><td>42</td><td class="numv">0.488</td><td class="numv">0.09</td>
+          <td><div class="bar b-noul"><i style="width:9%"></i></div></td>
+          <td class="down">第 3 → 第 4 ▼</td></tr>
+    </table>
+    <p class="note">
+      余弦最高的 clip 41 讲的是“在厨房做西兰花沙拉、剥花球”，主题高度相关但没有给出“该用哪种西兰花”，
+      因此 Jev 只给 0.16；clip 43 讲“品尝沙拉”，被判为最有用（0.57）。<b>这就是 Beyond Similarity 的直接证据。</b>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>准入 → 剔除已见 → 取前 2</h2>
+    <div class="grid2">
+      <div>
+        <b>第 1 轮</b>
+        <table>
+          <tr><th>clip</th><th>noul</th><th>处理</th></tr>
+          <tr><td>43</td><td>0.57</td><td class="ok">交付 ①</td></tr>
+          <tr><td>45</td><td>0.22</td><td class="ok">交付 ②</td></tr>
+          <tr><td>41</td><td>0.16</td><td>超出前 2</td></tr>
+          <tr><td>42</td><td>0.09</td><td>超出前 2</td></tr>
+        </table>
+        <p class="note">current_clips = {43, 45}</p>
+      </div>
+      <div>
+        <b>第 2 轮</b>
+        <table>
+          <tr><th>clip</th><th>noul</th><th>处理</th></tr>
+          <tr><td>43</td><td>0.51</td><td class="bad">已交付 → 剔除</td></tr>
+          <tr><td>41</td><td>0.13</td><td class="ok">交付 ①</td></tr>
+          <tr><td>42</td><td>0.07</td><td class="ok">交付 ②</td></tr>
+          <tr><td>45</td><td>0.16</td><td class="bad">已交付 → 剔除</td></tr>
+        </table>
+        <p class="note">分数最高的 43 已见过，先剔除才没有空轮</p>
+      </div>
+    </div>
+    <p class="note" style="margin-top:12px">
+      第 2 轮的 query 变成 <code>best type of broccoli for salad when dinner is still a long time away relation</code>；
+      若采用 <code>topk_first</code>（先截断再剔已见），这一轮会取到 43 然后判定为空手。
+    </p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span>交付的证据原文</h2>
+    <div class="clip"><b>clip 43</b> — <code>&lt;face_4&gt;</code> 在厨房，穿深色 T 恤；<code>&lt;face_673&gt;</code> 也在厨房，穿浅色长袖；<code>&lt;face_673&gt;</code> 品尝西兰花沙拉，说 “Mmm.”</div>
+    <div class="clip"><b>clip 45</b> — <code>&lt;voice_0&gt;</code> 描述一顿简单的派对晚餐：慢烤手撕猪肉，配辣味蛋黄酱；配菜包括“broccoli slaw”。</div>
+    <div class="clip"><b>clip 41</b> — <code>&lt;voice_671&gt;</code> 正在做西兰花沙拉，把花球从西兰花上剥下来。</div>
+    <div class="clip"><b>clip 42</b> — <code>&lt;voice_3&gt;</code> 向一位年轻女性要一茶匙糖，加点醋……（与西兰花种类无关）</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span>作答与判定</h2>
+    <table>
+      <tr><th>配置</th><th>轮数</th><th>回答</th><th>gpt-4o</th></tr>
+      <tr><td><b>ours</b>　<code>{mq}@0 + Jev</code></td><td>2</td>
+          <td>“Raw broccoli florets should be used…, they remain crunchy and are ideal for salads that need to sit.”</td>
+          <td class="ok">✅ 正确</td></tr>
+      <tr><td>消融：<b>去掉 mq</b>　<code>{}@0 + Jev</code></td><td>1</td>
+          <td>“Raw broccoli should be used…, it remains crunchy and doesn't wilt over time.”</td>
+          <td class="ok">✅ 正确</td></tr>
+      <tr><td><b>no-pool + Jev</b></td><td>—</td>
+          <td>“Use broccoli florets…, they are the best part of the broccoli for this preparation.”</td>
+          <td class="bad">❌ 错误</td></tr>
+    </table>
+    <p class="note">no-pool 版答成了“花球”而不是“生西兰花”，漏掉了问题真正问的那个属性。</p>
+  </div>
+
+  <div class="card">
+    <h2>这个例子说明什么</h2>
+    <div class="kpi">
+      <div><b>① 余弦 ≠ 可答性</b>余弦最高的 41（0.522）在 Jev 眼里只有 0.16，真正的证据 43 从第 2 升到第 1。</div>
+      <div><b>② 已见过滤是必需的</b>第 2 轮分数最高的 43 已交付过；先剔后取，这一轮才拿到 41 与 42。</div>
+      <div><b>③ 池子大不等于更好</b>no-pool 版被更多弱相关片段干扰，答成了“花球”，被判错。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:10px">案例二：三次空轮之后，改写查询把证据找回来</h2>
+    <div class="q" style="margin-bottom:14px">
+      <div class="label">QID <code>Efk3K4epEzg_Q3</code> · web 域</div>
+      <div><b>问题：</b>Which collection is Rick's favorite, as indicated in the video?</div>
+      <div style="margin-top:6px"><b>标准答案：</b>The album of Led Zeppelin.</div>
+    </div>
+    <table>
+      <tr><th style="width:44px">轮</th><th>query</th><th>余弦 top-2</th><th>交付（noul）</th></tr>
+      <tr><td>1</td><td><code>What collection does &lt;character_23&gt; prioritize or frequently mention…</code></td>
+          <td class="numv">39 = 0.338</td><td class="bad">空轮</td></tr>
+      <tr><td>2</td><td>同上（未改写）</td><td class="numv">39 = 0.359</td><td class="bad">空轮</td></tr>
+      <tr><td>3</td><td><code>What type of collectibles does &lt;character_23&gt; typically value most…</code></td>
+          <td class="numv">39 = 0.251</td><td>39（0.05）</td></tr>
+      <tr><td>4</td><td>同上（未改写）</td><td class="numv">39 = 0.274</td><td class="bad">空轮</td></tr>
+      <tr><td>5</td><td><code>What are Rick Harrison's most valued collections in Pawn Stars?</code></td>
+          <td class="numv">23 = 0.520<br>40 = 0.519</td><td class="ok">1（0.37）、23（0.25）</td></tr>
+      <tr><td>6</td><td><code>… Pawn Stars? relation</code></td>
+          <td class="numv">40 = 0.511<br>23 = 0.497</td><td class="ok">15（0.21）、20（0.20）</td></tr>
+    </table>
+    <p class="note">
+      前四轮里，查询一直围绕“&lt;character_23&gt; 重视什么收藏”打转，余弦只有 0.25–0.36，判定分数低于门槛；
+      第 5 轮 query 换成带真实人物名与节目名的 <b>Rick Harrison … Pawn Stars</b>，余弦立刻跳到 0.52，
+      判定器随即交付了高相关片段。
+    </p>
+    <table>
+      <tr><th>配置</th><th>轮数</th><th>回答</th><th>gpt-4o</th></tr>
+      <tr><td><b>ours</b>　<code>{mq}@0 + Jev</code></td><td>6</td><td>Led Zeppelin</td><td class="ok">✅</td></tr>
+      <tr><td>消融：去掉 mq</td><td>—</td><td>PEZ dispensers</td><td class="bad">❌</td></tr>
+      <tr><td>no-pool + Jev</td><td>—</td><td>Pez collection</td><td class="bad">❌</td></tr>
+    </table>
+    <p class="note">另两臂都答成“PEZ 玩偶”，只有 ours 找到了 Led Zeppelin 那张唱片。</p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:10px">案例三：缺少证据时，两臂都给出了相反结论</h2>
+    <div class="q" style="margin-bottom:14px">
+      <div class="label">QID <code>XX3rRntdyYc_Q3</code> · web 域</div>
+      <div><b>问题：</b>How proficient is the author in Chinese?</div>
+      <div style="margin-top:6px"><b>标准答案：</b>Not very proficient.</div>
+    </div>
+    <table>
+      <tr><th style="width:44px">轮</th><th>query</th><th>余弦 top-2</th><th>交付（noul）</th></tr>
+      <tr><td>1</td><td><code>Author's proficiency in Chinese</code></td>
+          <td class="numv">25 = 0.390<br>36 = 0.373</td><td>25（0.08）、2（0.08）</td></tr>
+      <tr><td>2</td><td><code>Author's Chinese language proficiency and background</code></td>
+          <td class="numv">25 = 0.362<br>36 = 0.335</td><td>10（0.15）、34（0.09）</td></tr>
+      <tr><td>3</td><td><code>Author's personal Chinese language skills and proficiency level</code></td>
+          <td class="numv">25 = 0.384<br>36 = 0.366</td><td class="bad">空轮</td></tr>
+      <tr><td>4</td><td><code>Author's personal Chinese language proficiency and fluency level</code></td>
+          <td class="numv">36 = 0.363<br>25 = 0.356</td><td>14（0.05）</td></tr>
+    </table>
+    <p class="note">
+      四轮都在 0.31–0.39 的低分区徘徊，判定分数也只有 0.05–0.15——“作者的中文水平”这件事在记忆图里本就缺少直接证据。
+    </p>
+    <table>
+      <tr><th>配置</th><th>轮数</th><th>回答</th><th>gpt-4o</th></tr>
+      <tr><td><b>ours</b>　<code>{mq}@0 + Jev</code></td><td>4</td><td>“basic to intermediate understanding of Chinese”</td><td class="ok">✅</td></tr>
+      <tr><td>消融：去掉 mq</td><td>—</td><td>“The author is proficient in Chinese…”</td><td class="bad">❌</td></tr>
+      <tr><td>no-pool + Jev</td><td>—</td><td>“demonstrates proficiency in Chinese…”</td><td class="bad">❌</td></tr>
+    </table>
+    <p class="note">同样的低分证据下，只有 ours 给出了“基础到中等”这个更接近标准答案的判断。</p>
+  </div>
+
+  <footer>
+    数据来源：<code>data/results/search_log_web_jev_mq.jsonl</code>（前 500 题段）、
+    <code>search_log_web_jev_v0.jsonl</code>、<code>web_jev_mq.judge4o.dedup.jsonl</code>、
+    <code>web_jev_v0.judge4o.dedup.jsonl</code>、<code>web_jev_nopool_500.judge4o.jsonl</code>。
+    所有片段编号、余弦分数与 noul 分数均为日志原值；片段文本为对应记忆图节点的截断。
+  </footer>
+
+</div>
+</body>
+</html>
