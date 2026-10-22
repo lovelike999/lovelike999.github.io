@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>案例：一道题的完整检索轨迹（三种配置）</title>
+<title>跨域案例：Web、Robot 与 EgoLife</title>
 <style>
   :root{
     --ink:#0f172a; --mut:#64748b; --line:#e2e8f0;
@@ -46,20 +46,40 @@
   @media(max-width:760px){.kpi{grid-template-columns:1fr}}
   .kpi div{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:12px}
   .kpi b{display:block;font-size:15px;margin-bottom:4px}
+  .domain{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+          padding:3px 10px;border-radius:999px;margin-bottom:10px;letter-spacing:.02em}
+  .domain.web{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+  .domain.robot{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+  .domain.ego{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+  .case-title{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
+  .case-title h2{margin-bottom:6px}
+  .case-title .metric{font-size:13px;color:var(--mut);white-space:nowrap}
+  .quote{border-left:3px solid var(--green);background:#f0fdf4;padding:10px 12px;border-radius:5px;margin-top:10px}
+  h3{font-size:15px;margin:20px 0 8px;color:#1e293b}
   footer{color:var(--mut);font-size:12.5px;margin-top:28px;border-top:1px solid var(--line);padding-top:14px}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <h1>三个案例：同一套检索轨迹，三种配置</h1>
+  <h1>跨域案例：相似度召回与可答性判定的差异</h1>
   <div class="sub">
-    数据来自 <code>search_log_web_jev_mq.jsonl</code> / <code>search_log_web_jev_v0.jsonl</code> 与对应判定文件；
-    判定口径 gpt-4o。图中片段编号与分数均为真实日志，未经改写。
+    Web 3 例、Robot 3 例、EgoLife 2 例。所有片段编号、余弦分数与 Jev <code>noul</code>
+    均来自真实检索日志；片段原文从对应记忆图回读，未用虚构案例替代。
   </div>
 
   <div class="card">
-    <h2 style="margin-bottom:10px">案例一：余弦排序 ≠ 可答性</h2>
+    <h2>案例覆盖</h2>
+    <div class="kpi">
+      <div><b>Web · 3 例</b>查询改写、空轮恢复、低余弦证据与最终判定。</div>
+      <div><b>Robot · 3 例</b>职业、书籍偏好与多物品计数，覆盖家庭长期记忆。</div>
+      <div><b>EgoLife · 2 例</b>午餐选择与共同搭建，覆盖跨事件时间与人物协作。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="domain web">WEB</span>
+    <h2 style="margin-bottom:10px">Web 案例一：余弦排序 ≠ 可答性</h2>
     <p class="note" style="margin:0">
       余弦最高的片段被判定器压到第三；已交付片段在第二轮被正确剔除。三配置中 ours 与“去掉 mq”都答对，
       no-pool 答错。
@@ -204,7 +224,8 @@
   </div>
 
   <div class="card">
-    <h2 style="margin-bottom:10px">案例二：三次空轮之后，改写查询把证据找回来</h2>
+    <span class="domain web">WEB</span>
+    <h2 style="margin-bottom:10px">Web 案例二：三次空轮之后，改写查询把证据找回来</h2>
     <div class="q" style="margin-bottom:14px">
       <div class="label">QID <code>Efk3K4epEzg_Q3</code> · web 域</div>
       <div><b>问题：</b>Which collection is Rick's favorite, as indicated in the video?</div>
@@ -238,7 +259,8 @@
   </div>
 
   <div class="card">
-    <h2 style="margin-bottom:10px">案例三：缺少证据时，两臂都给出了相反结论</h2>
+    <span class="domain web">WEB</span>
+    <h2 style="margin-bottom:10px">Web 案例三：缺少证据时，两臂都给出了相反结论</h2>
     <div class="q" style="margin-bottom:14px">
       <div class="label">QID <code>XX3rRntdyYc_Q3</code> · web 域</div>
       <div><b>问题：</b>How proficient is the author in Chinese?</div>
@@ -267,10 +289,205 @@
     <p class="note">同样的低分证据下，只有 ours 给出了“基础到中等”这个更接近标准答案的判断。</p>
   </div>
 
+  <div class="card">
+    <span class="domain robot">ROBOT</span>
+    <div class="case-title">
+      <div>
+        <h2>Robot 案例一：高相似场景没有回答“职业”</h2>
+        <div class="q">
+          <div class="label">QID <code>living_room_05_Q12</code> · Robot 域</div>
+          <div><b>问题：</b>What's Jee's job?</div>
+          <div style="margin-top:6px"><b>标准答案：</b>Drawing teacher.</div>
+        </div>
+      </div>
+      <div class="metric">正确证据在余弦第 18、19 位</div>
+    </div>
+    <table>
+      <tr><th>候选</th><th>余弦</th><th>Jev noul</th><th>证据内容</th></tr>
+      <tr><td>Cosine Top-1 · Clip 59</td><td class="numv">0.2577</td><td class="numv">0.18</td>
+          <td>在餐桌旁送生日礼物，没有职业信息。</td></tr>
+      <tr><td>Cosine Top-2 · Clip 25</td><td class="numv">0.2476</td><td class="numv">0.50</td>
+          <td>请机器人准备茶，和人物职业无关。</td></tr>
+      <tr><td><b>Jev 选中 · Clip 32</b></td><td class="numv">0.2132</td><td class="numv"><b>0.82</b></td>
+          <td>“I just need to teach several kids to learn arts… they don't know how to draw.”</td></tr>
+      <tr><td><b>Jev 选中 · Clip 33</b></td><td class="numv">0.2101</td><td class="numv"><b>0.79</b></td>
+          <td>提到“finish my lesson and finish the teaching”，确认其教师身份。</td></tr>
+    </table>
+    <div class="quote"><b>对比：</b>余弦更偏向“同一场景中的人物对话”；Jev 找到了直接说明“教孩子画画”的职业证据。</div>
+    <h3>逐轮检索轨迹与最终回答</h3>
+    <table>
+      <tr><th>轮</th><th>query</th><th>余弦 Top-2</th><th>Jev 选中（noul）</th><th>已交付片段</th></tr>
+      <tr><td>1</td><td><code>What is Jee's job?</code></td>
+          <td>59 = 0.2577<br>25 = 0.2476</td>
+          <td class="ok">32（0.82）、33（0.79）</td><td>{32, 33}</td></tr>
+      <tr><td>2</td><td><code>What is the name of &lt;character_0&gt;</code></td>
+          <td>8 = 0.6622<br>25 = 0.6539</td>
+          <td>25（0.06）</td><td>{32, 33, 25}</td></tr>
+      <tr><td>3</td><td>同一身份确认 query</td>
+          <td>8 = 0.6622<br>25 = 0.6539</td>
+          <td class="bad">无新证据，空轮</td><td>不变</td></tr>
+    </table>
+    <p class="note">实际运行 5 轮、4 次检索。第 1 轮已经找到职业证据；后两轮主要负责人物身份确认，最终回答为
+      <b>“Jee is a teacher.”</b>，GPT-4o 判定正确。</p>
+  </div>
+
+  <div class="card">
+    <span class="domain robot">ROBOT</span>
+    <div class="case-title">
+      <div>
+        <h2>Robot 案例二：反复谈到“书”，但没有说明喜欢哪类书</h2>
+        <div class="q">
+          <div class="label">QID <code>study_11_Q02</code> · Robot 域</div>
+          <div><b>问题：</b>What kind of book would Chris want to read now?</div>
+          <div style="margin-top:6px"><b>标准答案：</b>History books.</div>
+        </div>
+      </div>
+      <div class="metric">真正证据在余弦第 18 位</div>
+    </div>
+    <table>
+      <tr><th>候选</th><th>余弦</th><th>Jev noul</th><th>证据内容</th></tr>
+      <tr><td>Cosine Top-1 · Clip 12</td><td class="numv">0.4572</td><td class="numv">0.12</td>
+          <td>讨论选书与 electronics books，但没有 history。</td></tr>
+      <tr><td>Cosine Top-2 · Clip 33</td><td class="numv">0.4521</td><td class="numv">0.19</td>
+          <td>主要在整理书架，没有说明阅读偏好。</td></tr>
+      <tr><td><b>Jev 选中 · Clip 8</b></td><td class="numv">0.3972</td><td class="numv"><b>0.78</b></td>
+          <td>“Jerusalem, the biography…” 并明确提到对 <b>Jewish history</b> 的兴趣。</td></tr>
+      <tr><td><b>Jev 选中 · Clip 28</b></td><td class="numv">0.3937</td><td class="numv"><b>0.81</b></td>
+          <td>讨论 mystery novels，作为偏好信息的补充。</td></tr>
+    </table>
+    <div class="quote"><b>对比：</b>“书”这个主题让 Top-2 余弦很高，但只有较低余弦的 Clip 8 真正给出了 history books。</div>
+    <h3>逐轮检索轨迹与最终回答</h3>
+    <table>
+      <tr><th>轮</th><th>query</th><th>余弦 Top-2</th><th>Jev 选中（noul）</th><th>处理</th></tr>
+      <tr><td>1</td><td><code>What are Chris's interests or favorite books?</code></td>
+          <td>12 = 0.4572<br>33 = 0.4521</td>
+          <td class="ok">28（0.81）、8（0.78）</td>
+          <td>top-2 都被降权，交付 {28, 8}</td></tr>
+    </table>
+    <p class="note">Jev 最高分达到 0.81，第 1 轮后即进入最终回答，共运行 2 轮、1 次检索。回答为
+      “historical non-fiction… Jewish history or the development of Jerusalem”，GPT-4o 判定正确。</p>
+  </div>
+
+  <div class="card">
+    <span class="domain robot">ROBOT</span>
+    <div class="case-title">
+      <div>
+        <h2>Robot 案例三：需要从多个物品片段完成类型计数</h2>
+        <div class="q">
+          <div class="label">QID <code>study_16_Q04</code> · Robot 域</div>
+          <div><b>问题：</b>How many types of items did the robot take out from the white box in the bookshelf?</div>
+          <div style="margin-top:6px"><b>标准答案：</b>Three.</div>
+        </div>
+      </div>
+      <div class="metric">余弦 Top-2 不含可计数物品</div>
+    </div>
+    <table>
+      <tr><th>候选</th><th>余弦</th><th>Jev noul</th><th>证据内容</th></tr>
+      <tr><td>Cosine Top-1 · Clip 81</td><td class="numv">0.4555</td><td class="numv">0.03</td>
+          <td>要求把物品放进盒子，尚未展示具体类型。</td></tr>
+      <tr><td>Cosine Top-2 · Clip 23</td><td class="numv">0.4538</td><td class="numv">0.14</td>
+          <td>整理书架并发现空牛奶盒，无法完成计数。</td></tr>
+      <tr><td><b>Jev 选中 · Clip 49</b></td><td class="numv">0.3543</td><td class="numv"><b>0.86</b></td>
+          <td>打开 iPad Pro 盒子，里面装有四个绿色玻璃杯，并取出一只杯子。</td></tr>
+      <tr><td><b>Jev 选中 · Clip 50</b></td><td class="numv">0.3670</td><td class="numv">0.10</td>
+          <td>出现托盘、三个玻璃杯、iPad Pro 盒子和清洁喷瓶，为三类物品计数提供证据。</td></tr>
+    </table>
+    <div class="quote"><b>对比：</b>Top-2 是“拿东西/整理盒子”的过程描述，真正可计数的物品类型来自更低余弦的 Clip 49、50。</div>
+    <h3>逐轮检索轨迹与最终回答</h3>
+    <table>
+      <tr><th>轮</th><th>query</th><th>余弦 Top-2</th><th>Jev 选中（noul）</th><th>处理</th></tr>
+      <tr><td>1</td><td>机器人从书架白色盒子中拿出了哪些物品</td>
+          <td>36 = 0.4854<br>23 = 0.4802</td>
+          <td>40（0.23）、23（0.11）</td><td>sufficiency = 0.23，继续搜索</td></tr>
+      <tr><td>2</td><td>机器人从白色盒子取出的物品<code>[类型/数量限定]</code></td>
+          <td>81 = 0.4555<br>23 = 0.4538</td>
+          <td class="ok">49（0.86）、50（0.10）</td>
+          <td>累计交付 {40, 23, 49, 50}</td></tr>
+      <tr><td>3</td><td>不再检索，生成最终答案</td><td>—</td><td>—</td><td>结束</td></tr>
+    </table>
+    <p class="note">实际运行 3 轮、2 次检索。检索找到了杯子、盒子和清洁喷瓶等证据，但模型最终回答
+      “one type of item (green glass cups)”，GPT-4o 判定<b class="bad">错误</b>。这个案例同时说明：
+      Jev 找到可答证据并不保证下游模型一定完成正确聚合。</p>
+  </div>
+
+  <div class="card">
+    <span class="domain ego">EGOLIFE</span>
+    <div class="case-title">
+      <div>
+        <h2>EgoLife 案例一：从“讨论午餐”到真正选定 KFC</h2>
+        <div class="q">
+          <div class="label">QID <code>A1_JAKE_Q0032</code> · EgoLife · TaskMaster</div>
+          <div><b>问题：</b>What are we planning to eat for lunch?</div>
+          <div style="margin-top:6px"><b>标准答案：</b>KFC.</div>
+        </div>
+      </div>
+      <div class="metric">关键决定在余弦第 19 位</div>
+    </div>
+    <table>
+      <tr><th>候选</th><th>余弦</th><th>Jev noul</th><th>证据内容</th></tr>
+      <tr><td>Cosine Top-1 · Clip 305</td><td class="numv">0.5544</td><td class="numv">0.11</td>
+          <td>出现 “So, what are we eating?”、手机和桌子，但没有形成最终选择。</td></tr>
+      <tr><td>Cosine Top-2 · Clip 354</td><td class="numv">0.5138</td><td class="numv">0.05</td>
+          <td>只有 “I'm hungry, when's lunch?”，没有回答吃什么。</td></tr>
+      <tr><td><b>Jev 选中 · Clip 319</b></td><td class="numv">0.4034</td><td class="numv"><b>0.92</b></td>
+          <td>“Does KFC need utensils? Order two more.” 明确进入 KFC 下单环节。</td></tr>
+      <tr><td><b>Jev 选中 · Clip 295</b></td><td class="numv">0.3933</td><td class="numv"><b>0.98</b></td>
+          <td>“Ah, just KFC… KFC family bucket.” 直接说明最终决定。</td></tr>
+    </table>
+    <div class="quote"><b>对比：</b>余弦 Top-2 只捕捉到“午餐”这个事件；Jev 选中了真正包含决策结果的较低余弦片段。</div>
+    <h3>逐轮检索轨迹与最终回答</h3>
+    <table>
+      <tr><th>轮</th><th>query</th><th>余弦 Top-2</th><th>Jev 排名前 2（noul）</th><th>处理</th></tr>
+      <tr><td>1</td><td><code>What are we planning to eat for lunch?</code></td>
+          <td>305 = 0.5544<br>354 = 0.5138</td>
+          <td class="ok">295（0.98）、319（0.92）</td>
+          <td>top-2 均未进入 Jev 前 2；交付 {295, 319}</td></tr>
+    </table>
+    <p class="note">实际运行 2 轮、1 次检索。回答为 <b>“D. KFC”</b>，GPT-4o 判定正确。
+      Jev 的最高 sufficiency 为 0.98，Jev 层没有发生空轮。</p>
+  </div>
+
+  <div class="card">
+    <span class="domain ego">EGOLIFE</span>
+    <div class="case-title">
+      <div>
+        <h2>EgoLife 案例二：人物相关片段很多，但只有 Lucia 参与了搭建</h2>
+        <div class="q">
+          <div class="label">QID <code>A1_JAKE_Q0062</code> · EgoLife · RelationMap</div>
+          <div><b>问题：</b>Besides me, Katrina, and Shure, who else joined in to set up the shelf?</div>
+          <div style="margin-top:6px"><b>标准答案：</b>Lucia.</div>
+        </div>
+      </div>
+      <div class="metric">关键协作证据在余弦第 23 位</div>
+    </div>
+    <table>
+      <tr><th>候选</th><th>余弦</th><th>Jev noul</th><th>证据内容</th></tr>
+      <tr><td>Cosine Top-1 · Clip 91</td><td class="numv">0.5078</td><td class="numv">0.06</td>
+          <td>白板上出现 Lucia 等姓名，但当前活动不是搭建架子。</td></tr>
+      <tr><td>Cosine Top-2 · Clip 204</td><td class="numv">0.4791</td><td class="numv">0.09</td>
+          <td>Lucia 在场并参与其他对话，没有给出手工搭建关系。</td></tr>
+      <tr><td><b>Jev 选中 · Clip 209</b></td><td class="numv">0.3883</td><td class="numv"><b>0.78</b></td>
+          <td>Lucia 与 Tasha 等人一起拼接白色管件并讨论位置。</td></tr>
+      <tr><td><b>Jev 选中 · Clip 220</b></td><td class="numv">0.4389</td><td class="numv">0.40</td>
+          <td>Lucia 询问是否需要帮忙组装，并继续寻找可协助的事项。</td></tr>
+    </table>
+    <div class="quote"><b>对比：</b>仅凭“Lucia 在同一场景出现”会把 Top-1 看得很相关；真正的 RelationMap 证据是她参与了架子/管件搭建。</div>
+    <h3>逐轮检索轨迹与最终回答</h3>
+    <table>
+      <tr><th>轮</th><th>query</th><th>余弦 Top-2</th><th>Jev 排名前 2（noul）</th><th>处理</th></tr>
+      <tr><td>1</td><td><code>Did Lucia or Alice join the shelf setup besides me, Katrina, and Shure?</code></td>
+          <td>91 = 0.5078<br>204 = 0.4791</td>
+          <td class="ok">209（0.78）、220（0.40）</td>
+          <td>交付 {209, 220}</td></tr>
+    </table>
+    <p class="note">整题运行 4 轮、3 次检索；日志中的 Jev 交付轮先找到 Lucia 参与拼接和协助搭建的证据。
+      最终回答为 <b>“B. Lucia”</b>，GPT-4o 判定正确。</p>
+  </div>
+
   <footer>
-    数据来源：<code>data/results/search_log_web_jev_mq.jsonl</code>（前 500 题段）、
-    <code>search_log_web_jev_v0.jsonl</code>、<code>web_jev_mq.judge4o.dedup.jsonl</code>、
-    <code>web_jev_v0.judge4o.dedup.jsonl</code>、<code>web_jev_nopool_500.judge4o.jsonl</code>。
+    数据来源：Web 使用 <code>search_log_web_jev_mq.jsonl</code>、<code>search_log_web_jev_v0.jsonl</code>
+    与对应 GPT-4o 判定文件；Robot 使用 <code>search_log_robot_jev_v0.jsonl</code>；
+    EgoLife 使用 <code>search_log_egolife_jev_all.jsonl</code>。
     所有片段编号、余弦分数与 noul 分数均为日志原值；片段文本为对应记忆图节点的截断。
   </footer>
 
