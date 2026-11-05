@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    width: 4800px;
+    height: 3100px;
+    overflow: hidden;
+    background: #f3f6fb;
+    color: #172033;
+    font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  }
+  body {
+    background:
+      radial-gradient(circle at 8% 2%, rgba(80, 133, 255, .12), transparent 26%),
+      radial-gradient(circle at 95% 8%, rgba(24, 184, 142, .10), transparent 24%),
+      linear-gradient(180deg, #f8faff 0%, #eef3f9 100%);
+  }
+  .canvas { position: relative; width: 4800px; height: 3100px; padding: 58px 72px; }
+  .header {
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px 0 34px;
+    border-radius: 24px;
+    background: linear-gradient(100deg, #0f2a52 0%, #174a70 58%, #176f75 100%);
+    color: white;
+    box-shadow: 0 15px 34px rgba(26, 51, 87, .22);
+  }
+  .header-left { display: flex; align-items: center; gap: 28px; }
+  .mark {
+    width: 72px; height: 72px; border-radius: 21px;
+    display: flex; align-items: center; justify-content: center;
+    font: 700 38px/1 "Cascadia Mono", Consolas, monospace;
+    color: #0f2a52;
+    background: linear-gradient(135deg, #d7f3ff, #88e3d1);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.45);
+  }
+  h1 { margin: 0; font-size: 48px; letter-spacing: .2px; }
+  .subtitle { margin-top: 6px; font-size: 21px; color: #d6e8f4; }
+  .header-tag {
+    padding: 15px 24px; border-radius: 40px;
+    background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.27);
+    font: 600 21px/1.1 "Cascadia Mono", Consolas, monospace;
+    color: #e4f8ff; white-space: nowrap;
+  }
+  .main { position: absolute; left: 72px; right: 72px; top: 220px; bottom: 54px; }
+  .flow {
+    position: absolute; left: 0; top: 0; width: 2810px; height: 100%;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .flow-spine { position: absolute; left: 70px; top: 82px; bottom: 120px; width: 4px;
+    background: linear-gradient(#6ea2ff, #59c6ae 55%, #f3a34f); border-radius: 3px; z-index: 0; }
+  .card {
+    position: relative; z-index: 1; border-radius: 24px; background: rgba(255,255,255,.97);
+    border: 1px solid #dce5f0; box-shadow: 0 10px 24px rgba(40, 66, 105, .10);
+    padding: 28px 30px 26px 116px; overflow: hidden;
+  }
+  .card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 10px;
+    background: var(--accent);
+  }
+  .step {
+    position: absolute; left: 29px; top: 31px; width: 58px; height: 58px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font: 700 24px/1 "Cascadia Mono", Consolas, monospace; color: white;
+    background: var(--accent); box-shadow: 0 6px 15px color-mix(in srgb, var(--accent), transparent 62%);
+  }
+  .card-title { font-size: 38px; font-weight: 800; line-height: 1.1; letter-spacing: .2px; }
+  .card-sub { color: #66748a; font-size: 23px; margin-top: 7px; }
+  .card-body { margin-top: 15px; color: #263247; font-size: 25px; line-height: 1.42; }
+  .card-body b { color: #172033; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .chip {
+    display: inline-flex; align-items: center; min-height: 40px; padding: 5px 14px;
+    border-radius: 11px; font: 650 22px/1.15 "Cascadia Mono", Consolas, monospace;
+    color: #20314b; background: #edf3fb; border: 1px solid #d9e4f0;
+  }
+  .chip.hot { color: #8b3b17; background: #fff1e7; border-color: #ffd5bc; }
+  .chip.good { color: #0c6655; background: #e5f8f2; border-color: #bcebdd; }
+  .chip.blue { color: #1c4e91; background: #eaf2ff; border-color: #cfe0fb; }
+  .input-card { flex: 1.0; --accent: #4f7fe7; }
+  .extract-card { flex: 2.1; --accent: #15a594; padding-bottom: 17px; }
+  .gen-card { flex: 1.35; --accent: #8659cf; }
+  .graph-card { flex: 1.9; --accent: #e28534; }
+  .identity-card { flex: 1.25; --accent: #3d9b67; }
+  .thresholds { flex: 1.65; --accent: #d94d63; }
+  .split {
+    margin-top: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  }
+  .branch {
+    border-radius: 18px; padding: 20px 21px 18px; border: 1px solid #d9e4ef;
+    background: linear-gradient(180deg, #fbfdff, #f5f9fd);
+  }
+  .branch.face { border-top: 6px solid #28a8d2; }
+  .branch.voice { border-top: 6px solid #38b378; }
+  .branch-title { font-size: 30px; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: currentColor; }
+  .face .branch-title { color: #177b9d; }
+  .voice .branch-title { color: #1f8656; }
+  .role-list { display: grid; gap: 8px; margin-top: 14px; }
+  .role {
+    display: block; padding: 10px 14px; border-radius: 10px;
+    background: #f4f8fc; border: 1px solid #e1eaf3;
+  }
+  .role .name {
+    display: inline; color: #1b3452;
+    font: 700 18px/1.4 "Cascadia Mono", Consolas, monospace;
+  }
+  .role .name::after { content: "　"; }
+  .role .desc { display: inline; color: #47566d; font-size: 19px; line-height: 1.4; }
+  .threshold-grid {
+    margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
+  }
+  .threshold-item {
+    padding: 10px 13px; border-radius: 11px; background: #f7fafc;
+    border: 1px solid #e2e9f1; font-size: 18px; line-height: 1.35; color: #506078;
+  }
+  .threshold-item b { color: #172033; font-family: "Cascadia Mono", Consolas, monospace; }
+  .flow-note {
+    margin-top: 14px; padding: 11px 15px; border-radius: 12px;
+    font-size: 22px; color: #59677c; background: #f3f7fb; border-left: 5px solid #93a8c2;
+  }
+  .code-panel {
+    position: absolute; right: 0; top: 0; width: 1750px; height: 100%;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .code-head {
+    height: 70px; flex: none; border-radius: 18px; padding: 0 24px;
+    background: #17243a; color: #eaf3ff; display: flex; align-items: center;
+    justify-content: space-between; box-shadow: 0 9px 22px rgba(20,31,50,.18);
+  }
+  .code-head strong { font-size: 31px; }
+  .code-head span { font: 600 19px/1.1 "Cascadia Mono", Consolas, monospace; color: #9fb3ca; }
+  .code-card {
+    flex: 1; min-height: 0; position: relative; border-radius: 18px; overflow: hidden;
+    background: #101a2c; color: #dce8f8; border: 1px solid #263751;
+    box-shadow: 0 10px 24px rgba(20,31,50,.16);
+  }
+  .code-card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--accent);
+  }
+  .code-title {
+    height: 48px; padding: 0 20px 0 26px; display: flex; align-items: center;
+    justify-content: space-between; background: #16233a; border-bottom: 1px solid #2a3b56;
+    font-size: 23px; font-weight: 700; color: #f1f7ff;
+  }
+  .code-title span { color: #7fc9d7; font: 500 18px/1.1 "Cascadia Mono", Consolas, monospace; }
+  pre {
+    margin: 0; padding: 15px 20px 13px 27px; white-space: pre-wrap;
+    font: 23px/1.36 "Cascadia Mono", Consolas, monospace; color: #d8e6f8;
+  }
+  .kw { color: #ffb86b; } .st { color: #a8e48f; } .cm { color: #7f93ac; } .num { color: #8fd1ff; }
+  .c1 { flex: 1.05; --accent: #4f7fe7; }
+  .c2 { flex: 1.35; --accent: #28a8d2; }
+  .c3 { flex: 1.35; --accent: #38b378; }
+  .c4 { flex: 1.35; --accent: #8659cf; }
+  .c5 { flex: 1.75; --accent: #e28534; }
+  .source {
+    position: absolute; left: 76px; right: 76px; bottom: 16px; display: flex;
+    justify-content: space-between; color: #718096; font-size: 19px;
+  }
+  .source code { font: 18px/1.2 "Cascadia Mono", Consolas, monospace; color: #52627a; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <header class="header">
+    <div class="header-left">
+      <div class="mark">M3</div>
+      <div>
+        <h1>M3-Agent Memory Construction Pipeline</h1>
+        <div class="subtitle">Seeing, Listening, Remembering, and Reasoning · Multimodal Long-Term Memory</div>
+      </div>
+    </div>
+    <div class="header-tag">offline build → entity-centric graph → online retrieval</div>
+  </header>
+
+  <main class="main">
+    <section class="flow">
+      <div class="flow-spine"></div>
+
+      <article class="card input-card">
+        <div class="step">01</div>
+        <div class="card-title">长视频输入与片段标准化</div>
+        <div class="card-sub">先把连续视频流转换为带稳定时间索引的 30 秒 clip</div>
+        <div class="card-body">
+          预切分 clip → 抽帧 + 提取音频；<b>clip_id</b> 同时作为后续文本节点的 temporal timestamp。
+        </div>
+        <div class="chips">
+          <span class="chip blue">ffmpeg · 30 s / clip</span>
+          <span class="chip">MoviePy · frame sampling</span>
+          <span class="chip hot">fps = 5</span>
+          <span class="chip">audio = 16 kHz PCM WAV</span>
+          <span class="chip">OpenCV · JPEG / Base64</span>
+        </div>
+        <div class="role-list">
+          <div class="role">
+            <div class="name">ffmpeg / 30 s</div>
+            <div class="desc">固定片段时间单位，使 <code>clip_id</code> 能承担时间定位与前后文截断。</div>
+          </div>
+          <div class="role">
+            <div class="name">MoviePy / 5 FPS</div>
+            <div class="desc">解码视频并抽取 JPEG 帧，为后续人脸检测与 M3 多模态输入提供视觉证据。</div>
+          </div>
+          <div class="role">
+            <div class="name">16 kHz WAV</div>
+            <div class="desc">统一音频采样率，满足 Gemini 分轨与 ERes2NetV2 声纹模型的输入要求。</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card extract-card">
+        <div class="step">02</div>
+        <div class="card-title">人物实体抽取：视觉与听觉并行</div>
+        <div class="card-sub">先形成稳定的 face / voice 节点，再交给 M3-Agent-Memorization</div>
+        <div class="split">
+          <div class="branch face">
+            <div class="branch-title"><span class="dot"></span>Face branch</div>
+            <div class="role-list">
+              <div class="role">
+                <div class="name">InsightFace buffalo_l</div>
+                <div class="desc">RetinaFace 检测人脸框，ArcFace 输出 512-D 身份特征，用于人物节点构建。</div>
+              </div>
+              <div class="role">
+                <div class="name">det &gt; 0.85 · quality &gt; 22</div>
+                <div class="desc">最终质量门控，过滤误检、模糊脸和过小人脸，减少错误人物节点。</div>
+              </div>
+              <div class="role">
+                <div class="name">HDBSCAN ≥ 0.8 / 20 · cluster ≥ 20</div>
+                <div class="desc">先筛掉低质量样本，再把同一 clip 中重复出现的人脸归为稳定簇。</div>
+              </div>
+              <div class="role">
+                <div class="name">τimg ≥ 0.30 · max 10</div>
+                <div class="desc">跨 clip 做同人重识别；平均余弦达到阈值就复用 image node，并限制声纹/图存储规模。</div>
+              </div>
+              <div class="role">
+                <div class="name">top 3 / cluster · CPU</div>
+                <div class="desc">每个角色保留最多 3 张高质量代表脸；CPU 模式避免人脸检测占用 GPU。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="branch voice">
+            <div class="branch-title"><span class="dot"></span>Voice branch</div>
+            <div class="role-list">
+              <div class="role">
+                <div class="name">Gemini 1.5 Pro-002</div>
+                <div class="desc">联合完成语音分轨与 ASR，给出每段开始时间、结束时间和字幕文本。</div>
+              </div>
+              <div class="role">
+                <div class="name">gap ≤ 0.6 s</div>
+                <div class="desc">合并同一说话人的相邻短句，避免一句话被切碎成多个 voice 片段。</div>
+              </div>
+              <div class="role">
+                <div class="name">min duration = 2 s</div>
+                <div class="desc">删除过短且声纹不稳定的语音，降低噪声与错误说话人聚类的概率。</div>
+              </div>
+              <div class="role">
+                <div class="name">ERes2NetV2 + FBank · 192-D</div>
+                <div class="desc">提取归一化声纹，用声音身份跨 clip 关联同一说话人。</div>
+              </div>
+              <div class="role">
+                <div class="name">τaudio ≥ 0.60 · max 20</div>
+                <div class="desc">平均余弦超过阈值就复用 voice node；限制 20 个向量控制存储和聚合成本。</div>
+              </div>
+              <div class="role">
+                <div class="name">pydub segmentation</div>
+                <div class="desc">按 Gemini 返回的时间边界提取真实音频段，供声纹模型计算。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flow-note">
+          输出可复用的稳定标识：<b>&lt;face_id&gt;</b> 与 <b>&lt;voice_id&gt;</b>，后续所有 memory 均通过这些实体 ID 连边。
+        </div>
+      </article>
+
+      <article class="card gen-card">
+        <div class="step">03</div>
+        <div class="card-title">M3-Agent-Memorization：生成 Episodic / Semantic Memory</div>
+        <div class="card-body">
+          输入包含当前 clip 视频、代表性人脸裁剪、带时间戳的语音文本和 memory prompt。模型同时输出
+          <b>video_descriptions</b>（原子事件）与 <b>high_level_conclusions</b>（高层推断、人物等价关系）。
+        </div>
+        <div class="chips">
+          <span class="chip blue">Qwen2.5-Omni Thinker · 7B</span>
+          <span class="chip">use_audio_in_video = True</span>
+          <span class="chip hot">temperature = 1e−6</span>
+          <span class="chip">max_new_tokens = 4096</span>
+          <span class="chip good">JSON schema constrained</span>
+        </div>
+        <div class="role-list">
+          <div class="role">
+            <div class="name">M3-Agent-Memorization</div>
+            <div class="desc">同时阅读视频画面、人脸证据、语音文本和时间信息，生成 episodic / semantic memory。</div>
+          </div>
+          <div class="role">
+            <div class="name">use_audio_in_video = True</div>
+            <div class="desc">让模型在对齐视频时同步使用音轨，保留说话内容与画面事件的对应关系。</div>
+          </div>
+          <div class="role">
+            <div class="name">temperature = 1e−6</div>
+            <div class="desc">近似贪婪解码，减少随机性，使 memory 内容更稳定、便于复现。</div>
+          </div>
+          <div class="role">
+            <div class="name">max_new_tokens = 4096</div>
+            <div class="desc">为原子事件列表与高层结论预留足够长度，避免输出在中途被截断。</div>
+          </div>
+          <div class="role">
+            <div class="name">JSON schema</div>
+            <div class="desc">强制输出可解析的 <code>video_descriptions</code> 与 <code>high_level_conclusions</code>，直接进入建图。</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card graph-card">
+        <div class="step">04</div>
+        <div class="card-title">文本向量化与多模态异构图写入</div>
+        <div class="card-body">
+          每条 memory 用 <b>text-embedding-3-large</b> 转为 <b>3072-D</b> 向量；正则提取实体标签后建立双向边。
+          Episodic 每条新建节点；Semantic 在实体子集一致时按相似度决定增强、削弱或新建。
+        </div>
+        <div class="chips">
+          <span class="chip">nodes: img / voice / episodic / semantic</span>
+          <span class="chip hot">sim &gt; 0.85 → reinforce (+1)</span>
+          <span class="chip hot">sim &lt; 0 → weaken (−1)</span>
+          <span class="chip good">otherwise → new semantic node</span>
+          <span class="chip blue">edge weight starts at 1.0</span>
+        </div>
+        <div class="role-list">
+          <div class="role">
+            <div class="name">text-embedding-3-large · 3072-D</div>
+            <div class="desc">把原子事件和语义结论映射到统一向量空间，支持后续余弦检索。</div>
+          </div>
+          <div class="role">
+            <div class="name">entity regex &lt;…&gt;</div>
+            <div class="desc">识别人名、人脸和语音 ID，把文本节点连接到对应人物实体。</div>
+          </div>
+          <div class="role">
+            <div class="name">Episodic → new node</div>
+            <div class="desc">保留每个 clip 的独立事件与时间顺序，便于按时间或事件回溯。</div>
+          </div>
+          <div class="role">
+            <div class="name">Semantic sim &gt; 0.85</div>
+            <div class="desc">视为重复或高度一致的结论，增强已有节点连边而不重复添加。</div>
+          </div>
+          <div class="role">
+            <div class="name">Semantic sim &lt; 0</div>
+            <div class="desc">视为冲突信号，削弱已有连接；当前实现不会再为冲突结论新建节点。</div>
+          </div>
+          <div class="role">
+            <div class="name">otherwise → new semantic node</div>
+            <div class="desc">保留新知识；双向边初始权重为 1，后续通过增强/削弱累积证据。</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card identity-card">
+        <div class="step">05</div>
+        <div class="card-title">人物身份合并与持久化</div>
+        <div class="card-body">
+          扫描 “Equivalence: &lt;face_x&gt;, &lt;voice_y&gt;” 语义节点，用并查集将 face / voice 合并为
+          <b>character_k</b>；最后执行 <b>refresh_equivalences()</b>，将完整 VideoGraph 序列化为 pickle。
+        </div>
+        <div class="chips">
+          <span class="chip good">union-find</span>
+          <span class="chip">character_mappings</span>
+          <span class="chip">reverse_character_mappings</span>
+          <span class="chip blue">*.pkl + temporal clip index</span>
+        </div>
+        <div class="role-list">
+          <div class="role">
+            <div class="name">Equivalence semantic nodes</div>
+            <div class="desc">提供 face 与 voice 属于同一人物的显式证据，作为身份合并输入。</div>
+          </div>
+          <div class="role">
+            <div class="name">Union-find</div>
+            <div class="desc">处理多个等价关系的传递合并，把多个 face/voice ID 归并为一个 character。</div>
+          </div>
+          <div class="role">
+            <div class="name">refresh_equivalences()</div>
+            <div class="desc">重新计算正反向人物映射，保证节点、检索和回答使用一致的人物身份。</div>
+          </div>
+          <div class="role">
+            <div class="name">pickle (*.pkl)</div>
+            <div class="desc">持久化节点、边、向量和角色映射；在线问答时直接加载，避免重复生成。</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card thresholds">
+        <div class="step">τ</div>
+        <div class="card-title">Threshold quick reference</div>
+        <div class="threshold-grid">
+          <div class="threshold-item"><b>clip = 30 s</b> · 定义时间索引与检索粒度</div>
+          <div class="threshold-item"><b>fps = 5</b> · 平衡动作覆盖与视觉计算成本</div>
+          <div class="threshold-item"><b>face ≥ 0.85 / 22</b> · 保证人脸检测和质量可靠</div>
+          <div class="threshold-item"><b>face match ≥ 0.30</b> · 跨片段确认同一人物</div>
+          <div class="threshold-item"><b>voice ≥ 2 s</b> · 排除过短、不可靠的语音</div>
+          <div class="threshold-item"><b>voice match ≥ 0.60</b> · 跨片段关联同一说话人</div>
+          <div class="threshold-item"><b>semantic &gt; 0.85</b> · 合并重复结论并增强边</div>
+          <div class="threshold-item"><b>semantic &lt; 0</b> · 削弱相互冲突的证据</div>
+          <div class="threshold-item"><b>text dim = 3072</b> · 提供高容量语义检索空间</div>
+          <div class="threshold-item"><b>temperature = 1e−6</b> · 降低生成随机性并提高复现性</div>
+        </div>
+        <div class="flow-note" style="margin-top:18px">
+          图解依据：论文的 M3-Agent-Memorization + VideoGraph 流程，以及本地
+          <b>m3-agent-master</b> 实现。服务器现有 EgoLife 分支使用 SRT 分轨，阈值不同，不用于本图。
+        </div>
+      </article>
+    </section>
+
+    <aside class="code-panel">
+      <div class="code-head">
+        <strong>Core implementation snippets</strong>
+        <span>m3-agent-master / memory path</span>
+      </div>
+
+      <div class="code-card c1">
+        <div class="code-title">
+          1 · Clip iteration & decoding
+          <span>memorization_memory_graphs.py</span>
+        </div>
+        <pre>clips = sorted(glob.glob(sample[<span class="st">"clip_path"</span>] + <span class="st">"/*"</span>),
+               key=<span class="kw">lambda</span> p: int(os.path.basename(p).split(<span class="st">"."</span>)[<span class="num">0</span>]))
+<span class="kw">for</span> clip_path <span class="kw">in</span> clips:
+    clip_id = int(os.path.basename(clip_path).split(<span class="st">"."</span>)[<span class="num">0</span>])
+    b64v, b64f, b64a = process_video_clip(clip_path)
+    process_segment(video_graph, b64v, b64f, b64a,
+                    clip_id, sample, clip_path)</pre>
+      </div>
+
+      <div class="code-card c2">
+        <div class="code-title">
+          2A · Face extraction & matching
+          <span>face_processing.py</span>
+        </div>
+        <pre>face_app = FaceAnalysis(name=<span class="st">"buffalo_l"</span>)
+face_app.prepare(ctx_id=<span class="num">-1</span>)
+
+clustered_faces = cluster_faces(faces_json, <span class="num">20</span>, <span class="num">0.5</span>)
+<span class="cm"># HDBSCAN prefilter: det ≥ 0.8, quality ≥ 20</span>
+<span class="cm"># final score gate:  det &gt; 0.85, quality &gt; 22</span>
+
+matched = video_graph.search_img_nodes(face_info)
+<span class="cm"># accepted when average cosine similarity ≥ 0.30</span>
+video_graph.update_node(matched_node, face_info)
+<span class="cm"># otherwise: video_graph.add_img_node(face_info)</span></pre>
+      </div>
+
+      <div class="code-card c3">
+        <div class="code-title">
+          2B · Speaker diarization & embedding
+          <span>voice_processing.py</span>
+        </div>
+        <pre>input = [{<span class="st">"type"</span>: <span class="st">"video_base64/mp4"</span>, <span class="st">"content"</span>: video_b64},
+         {<span class="st">"type"</span>: <span class="st">"text"</span>, <span class="st">"content"</span>: prompt_audio_segmentation}]
+messages = generate_messages(input)
+model = <span class="st">"gemini-1.5-pro-002"</span>
+asrs = validate_and_fix_json(get_response(model, messages)[<span class="num">0</span>])
+
+embedding_model = ERes2NetV2(feat_dim=<span class="num">80</span>, embedding_size=<span class="num">192</span>)
+<span class="cm"># match voice node if average cosine similarity ≥ 0.60</span>
+video_graph.update_node(matched_node, audio_info)</pre>
+      </div>
+
+      <div class="code-card c4">
+        <div class="code-title">
+          3 · Multimodal memory generation
+          <span>memory_processing_qwen.py</span>
+        </div>
+        <pre>video_context = generate_video_context(
+    base64_frames, faces_list, voices_list, video_path)
+
+messages = generate_messages(
+    [{<span class="st">"type"</span>: <span class="st">"text"</span>, <span class="st">"content"</span>: prompt_generate_memory_with_ids_sft}]
+    + video_context)
+
+memories_string = get_response(messages, max_new_tokens=<span class="num">4096</span>)[<span class="num">0</span>]
+memories = validate_and_fix_json(memories_string)
+epi_key = <span class="st">"video_descriptions"</span>
+sem_key = <span class="st">"high_level_conclusions"</span></pre>
+      </div>
+
+      <div class="code-card c5">
+        <div class="code-title">
+          4–5 · Embedding, graph update & persistence
+          <span>memory_processing.py / videograph.py</span>
+        </div>
+        <pre>embeddings = parallel_get_embedding(
+    <span class="st">"text-embedding-3-large"</span>, memory_contents)[<span class="num">0</span>]
+
+new_node_id = video_graph.add_text_node(memory, clip_id, type)
+<span class="kw">for</span> entity <span class="kw">in</span> parse_video_caption(video_graph, memory[<span class="st">"contents"</span>][<span class="num">0</span>]):
+    video_graph.add_edge(new_node_id, entity[<span class="num">1</span>])
+
+<span class="kw">if</span> similarity &gt; <span class="num">0.85</span>: video_graph.reinforce_node(node_id)
+<span class="kw">elif</span> similarity &lt; <span class="num">0</span>: video_graph.weaken_node(node_id)
+<span class="kw">else</span>: insert_memory(video_graph, memory, type)
+
+video_graph.refresh_equivalences()
+<span class="kw">with</span> open(sample[<span class="st">"mem_path"</span>], <span class="st">"wb"</span>) <span class="kw">as</span> f:
+    pickle.dump(video_graph, f)</pre>
+      </div>
+    </aside>
+  </main>
+
+  <div class="source">
+    <span>
+      Source: “Seeing, Listening, Remembering, and Reasoning: A Multimodal Agent with Long-Term Memory”
+      · M3-Agent memory pipeline
+    </span>
+    <code>F:\github\m3-agent2\m3-agent-master</code>
+  </div>
+</div>
+</body>
+</html>
